@@ -60,7 +60,7 @@
     onPeers(handler, onErr) {
       const r = rt.ref("presence"), cb = s => {
         const v = s.val() || {}, now = Date.now();
-        const peers = Object.entries(v).filter(([, p]) => p && now - (p.at || 0) < 10 * 60 * 1000).map(([k, p]) => ({ peer: k, by: k, isMe: k === uid, sameTab: k === uid, kind: "viewer", guest: false, presence: p, updatedAt: now }));
+        const peers = Object.entries(v).filter(([, p]) => p && now - (p.at || 0) < 75 * 1000).map(([k, p]) => ({ peer: k, by: k, isMe: k === uid, sameTab: k === uid, kind: "viewer", guest: false, presence: p, updatedAt: now }));
         handler({ peers, joined: [], left: [], updated: [] });
       };
       r.on("value", cb, () => onErr && onErr({ code: "not_granted", message: "" })); return () => r.off("value", cb);

@@ -2056,6 +2056,7 @@ function chooseChar(id) {
 }
 
 let lastSent = "", lastSentAt = 0;
+setInterval(() => pushPresence(true), 20000); // 20초마다 "나 아직 있어" 신호: 창을 닫거나 앱을 끄면 1분쯤 뒤 캐릭터가 풀려요
 function pushPresence(force = false) {
   if (!room || !myChar) return;
   const p = { c: myChar, x: Math.round(me.x * 100) / 100, y: Math.round(me.y * 100) / 100, p: me.pose, f: me.flip ? 1 : 0, s: me.step > 0 ? 1 : 0, h: me.seat ? me.seat.h : 0, o: myOutfit, dr: drunk, ac: myAcc, id: myId || null };
