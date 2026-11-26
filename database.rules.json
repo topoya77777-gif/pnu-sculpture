@@ -1,0 +1,34 @@
+{
+  "rules": {
+    "config": {
+      ".read": "auth != null",
+      "admin": { ".write": "auth != null && (!data.exists() || auth.uid === data.val())" },
+      "inviteCode": { ".write": "auth != null && auth.uid === root.child('config/admin').val()" }
+    },
+    "members": {
+      ".read": "auth != null && root.child('members/' + auth.uid).exists()",
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && ((auth.uid === $uid && newData.child('code').val() === root.child('config/inviteCode').val()) || auth.uid === root.child('config/admin').val())"
+      }
+    },
+    "presence": {
+      ".read": "auth != null && root.child('members/' + auth.uid).exists()",
+      "$uid": { ".write": "auth != null && auth.uid === $uid && root.child('members/' + auth.uid).exists()" }
+    },
+    "data": {
+      ".read": "auth != null && root.child('members/' + auth.uid).exists()",
+      "$col": {
+        ".indexOn": ["t"],
+        ".write": "auth != null && auth.uid === root.child('config/admin').val()",
+        "$id": {
+          ".write": "auth != null && root.child('members/' + auth.uid).exists() && (!data.exists() || data.child('by').val() === auth.uid || auth.uid === root.child('config/admin').val())"
+        }
+      }
+    },
+    "assets": {
+      ".read": "auth != null && root.child('members/' + auth.uid).exists()",
+      "$id": { ".write": "auth != null && root.child('members/' + auth.uid).exists() && !data.exists() && newData.isString() && newData.val().length < 7000000" }
+    }
+  }
+}
