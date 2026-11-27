@@ -1,1 +1,1 @@
-{ "name": "부산대 조소과", "short_name": "부산대 조소과", "display": "standalone", "background_color": "#efe3cf", "theme_color": "#efe3cf", "icons": [ { "src": "icon-192.png?v=2", "sizes": "192x192", "type": "image/png" }, { "src": "icon-512.png?v=2", "sizes": "512x512", "type": "image/png" } ] }
+{ "name": "부산대 조소과", "short_name": "부산대 조소과", "display": "standalone", "background_color": "#efe3cf", "theme_color": "#efe3cf", "icons": [ { "src": "icon-192.png?v=3", "sizes": "192x192", "type": "image/png" }, { "src": "icon-512.png?v=3", "sizes": "512x512", "type": "image/png" } ] }

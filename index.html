@@ -2,7 +2,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="부산대 조소과">
-<meta name="theme-color" content="#efe3cf"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-180.png?v=2"><link rel="icon" type="image/png" href="icon-192.png?v=2">
+<meta name="theme-color" content="#efe3cf"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-180.png?v=3"><link rel="icon" type="image/png" href="icon-192.png?v=3">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -263,7 +263,7 @@ function avShade(hex, f) {
 const app = $("app"), cv = $("world"), g0 = cv.getContext("2d");
 const lo = document.createElement("canvas"), g = lo.getContext("2d");
 let G = g, S = 2, buildings = [], near = null, hover = null, objs = [], blocks = [], bg = null, SEATS = [], seatTag = null;
-const N = 26, NX = 33, OX = N * 16 + 16, OY = 88, WWID = (N + NX) * 16 + 32, WHEI = OY + (N + NX) * 8 + 30, /* NX: 폴리장 오른쪽 찻길까지 (가로만 넓어요) */ OLC = "#3a2418", PLAT = { x: -9, y: -9, w: 0, d: 0, h: 0 };
+const N = 26, NX = 33, NY = 30, OX = NY * 16 + 16, OY = 88, WWID = (NY + NX) * 16 + 32, WHEI = OY + (NX + NY) * 8 + 30, /* N: 과실 크기, NX·NY: 바깥(앞마당·오른쪽 야외·찻길)까지 */ OLC = "#3a2418", PLAT = { x: -9, y: -9, w: 0, d: 0, h: 0 };
 const START = [7.6, 24.4];
 const me = { x: START[0], y: START[1], flip: false, back: true, step: 0, path: [], pose: "stand", seat: null, wantSeat: null };
 const lz = { x: START[0] + .7, y: START[1] + .6, t: 0, say: "", sayUntil: 0, flip: false };
@@ -272,7 +272,7 @@ function say(text, ms = 3500) { try { if (myChar) bubble(myChar, text); } catch 
 const logoSvg = document.querySelector("#rooms .brand svg").outerHTML.replace("<svg", '<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256"');
 const lizardImg = new Image(); lizardImg.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(logoSvg.replace(/<rect[^>]*>(<\/rect>)?/, ""));
 $("hudBrand").innerHTML = document.querySelector("#rooms .brand").innerHTML;
-{ const sv = $("hudBrand").querySelector("svg"); if (sv) { const im = document.createElement("img"); im.className = "logo"; im.src = "icon-192.png?v=2"; im.alt = ""; im.style.cssText = "width:32px;height:32px;image-rendering:pixelated;border-radius:8px"; sv.replaceWith(im); } } // 🌈 새 도트 아이콘
+{ const sv = $("hudBrand").querySelector("svg"); if (sv) { const im = document.createElement("img"); im.className = "logo"; im.src = "icon-192.png?v=3"; im.alt = ""; im.style.cssText = "width:32px;height:32px;image-rendering:pixelated;border-radius:8px"; sv.replaceWith(im); } } // 🌈 새 도트 아이콘
 /* ---------- 도트 그리기 도구 (안티앨리어싱 없이 직접 칠함) ---------- */
 const iso = (gx, gy, z = 0) => [Math.round(OX + (gx - gy) * 16), Math.round(OY + (gx + gy) * 8 - z)];
 const px = (x, y, w, h, c) => { G.fillStyle = c; G.fillRect(Math.round(x), Math.round(y), w, h); };
@@ -498,23 +498,23 @@ const DEPTS = [
   { name: "라꾸라꾸 존", at: [1.6, 2.4, 36], color: "#4a6a9a" },
   { name: "개인 작업대", at: [10.4, .4, 64], color: "#8a8478" },
   { name: "쥬 졸업작품", at: [11.2, 21.0, 46], color: "#5a5048" },
-  { name: "폴리장 (야외)", at: [21, 1.2, 46], color: "#2f6fb0" },
-  { name: "폐기물 처리장", at: [22.6, 10.0, 40], color: "#4e7a34" },
+  { name: "야외", at: [21, 1.2, 40], color: "#5a7a5a" },
+  { name: "입구", at: [7.6, 27.4, 30], color: "#8a6a4a" },
   { name: "부산대 앞 찻길", at: [29.6, 1.0, 40], color: "#4a4c58" },
 ];
-/* 🚗 폴리장 오른쪽 찻길: 인도(N~N+1.2) · 2차선 도로 · 건너편 인도 · 횡단보도(셔터 앞) */
-const ROAD = { s0: N, r0: N + 1.2, r1: NX - .9, x1: NX, cw0: 10.6, cw1: 13.4 };
+/* 🚗 야외 오른쪽 찻길: 인도(N~N+1.2) · 2차선 도로 · 건너편 인도 · 횡단보도(앞마당 앞) */
+const ROAD = { s0: N, r0: N + 1.2, r1: NX - .9, x1: NX, cw0: 26.6, cw1: 28.8 };
 function drawRoad() {
   const { s0, r0, r1, x1, cw0, cw1 } = ROAD, mid = (r0 + r1) / 2;
   // 인도 (보도블럭)
-  for (const [a, b] of [[s0, r0], [r1, x1]]) for (let j = 0; j < N * 2; j++) for (let i = 0; i < Math.round((b - a) * 2); i++) topQuad(a + i / 2, j / 2, Math.min(b, a + (i + 1) / 2), (j + 1) / 2, 0, (i + j) % 2 ? "#C9C2B6" : "#D6CFC2");
+  for (const [a, b] of [[s0, r0], [r1, x1]]) for (let j = 0; j < NY * 2; j++) for (let i = 0; i < Math.round((b - a) * 2); i++) topQuad(a + i / 2, j / 2, Math.min(b, a + (i + 1) / 2), (j + 1) / 2, 0, (i + j) % 2 ? "#C9C2B6" : "#D6CFC2");
   // 아스팔트
-  topQuad(r0, 0, r1, N, 0, "#4A4C54");
-  seed = 31; G.globalAlpha = .18; for (let k = 0; k < 160; k++) { const [x, y] = iso(r0 + rnd() * (r1 - r0), rnd() * N); px(x, y, 1, 1, rnd() < .5 ? "#2E3036" : "#6A6C74"); } G.globalAlpha = 1; seed = 7;
+  topQuad(r0, 0, r1, NY, 0, "#4A4C54");
+  seed = 31; G.globalAlpha = .18; for (let k = 0; k < 180; k++) { const [x, y] = iso(r0 + rnd() * (r1 - r0), rnd() * NY); px(x, y, 1, 1, rnd() < .5 ? "#2E3036" : "#6A6C74"); } G.globalAlpha = 1; seed = 7;
   // 연석 · 차선
-  line(...iso(r0, 0), ...iso(r0, N), "#F2F0EA"); line(...iso(r1, 0), ...iso(r1, N), "#F2F0EA");
-  for (let y = .4; y < N; y += 1.6) if (y + .9 < cw0 || y > cw1) { topQuad(mid - .07, y, mid + .07, Math.min(N, y + .9), 0, "#F2C230"); }
-  // 횡단보도 (셔터 바로 앞)
+  line(...iso(r0, 0), ...iso(r0, NY), "#F2F0EA"); line(...iso(r1, 0), ...iso(r1, NY), "#F2F0EA");
+  for (let y = .4; y < NY; y += 1.6) if (y + .9 < cw0 || y > cw1) { topQuad(mid - .07, y, mid + .07, Math.min(NY, y + .9), 0, "#F2C230"); }
+  // 횡단보도
   for (let x = r0 + .2; x < r1 - .1; x += .5) topQuad(x, cw0, x + .28, cw1, 0, "#F4F4F0");
 }
 function streetLight(gx, gy) {
@@ -534,11 +534,11 @@ function busStop(gx, gy) {
 }
 /* 지나가는 차 (화면에서만, 위험하진 않아요) */
 const CARS = [{ lane: ROAD.r0 + .55, dir: 1, period: 13, off: 0, col: "#E85A5A" }, { lane: ROAD.r1 - 1.45, dir: -1, period: 17, off: 6, col: "#4FA0E0" }, { lane: ROAD.r0 + .55, dir: 1, period: 13, off: 7, col: "#F2C230" }];
-function carPos(c, now) { const t = ((now / 1000 + c.off) % c.period) / c.period, y = -3 + t * (N + 6); return [c.lane, c.dir > 0 ? y : N + 3 - (y + 3)]; }
+function carPos(c, now) { const t = ((now / 1000 + c.off) % c.period) / c.period, y = -3 + t * (NY + 6); return [c.lane, c.dir > 0 ? y : NY - y]; }
 let lastHonk = 0;
 function carItems(now) {
   return CARS.map(c => { const [x, y] = carPos(c, now); return { d: x + y + 1.2, f: () => {
-    if (y < -2.2 || y > N + .2) return;
+    if (y < -2.2 || y > NY + .2) return;
     const w = .9, d = 1.7, dk = avShade(c.col, -.25), lt = avShade(c.col, .2);
     box(x, y, w, d, 7, lt, c.col, dk, 2);
     box(x + .1, y + (c.dir > 0 ? .35 : .45), w - .2, .9, 5, "#CFE6F4", "#9CC4DC", "#7EA8C4", 9);
@@ -553,21 +553,21 @@ function stain(cx, cy, r, c, a) {
 function drawRoom() {
   seed = 7;
   // 바닥판 옆면 (앞쪽은 시멘트 두께)
-  poly([iso(0, N), iso(NX, N), iso(NX, N, -10), iso(0, N, -10)], "#8E887C"); outline([iso(0, N), iso(NX, N), iso(NX, N, -10), iso(0, N, -10)]);
-  poly([iso(NX, 0), iso(NX, N), iso(NX, N, -10), iso(NX, 0, -10)], "#7E786C"); outline([iso(NX, 0), iso(NX, N), iso(NX, N, -10), iso(NX, 0, -10)]);
+  poly([iso(0, NY), iso(NX, NY), iso(NX, NY, -10), iso(0, NY, -10)], "#8E887C"); outline([iso(0, NY), iso(NX, NY), iso(NX, NY, -10), iso(0, NY, -10)]);
+  poly([iso(NX, 0), iso(NX, NY), iso(NX, NY, -10), iso(NX, 0, -10)], "#7E786C"); outline([iso(NX, 0), iso(NX, NY), iso(NX, NY, -10), iso(NX, 0, -10)]);
   drawRoad();
-  // 실내: 낡은 시멘트 타일 / 야외: 거친 콘크리트
-  for (let i = 0; i < N * 2; i++) for (let j = 0; j < N * 2; j++) {
-    const out = i >= INX * 2; topQuad(i / 2, j / 2, (i + 1) / 2, (j + 1) / 2, 0, out ? ((i + j) % 2 ? "#A9A79D" : "#A3A197") : ((i + j) % 2 ? "#BDB5A7" : "#B4AB9C"));
+  // 실내: 낡은 시멘트 타일 / 바깥(오른쪽 야외 + 앞마당): 거친 콘크리트
+  for (let i = 0; i < N * 2; i++) for (let j = 0; j < NY * 2; j++) {
+    const out = i >= INX * 2 || j >= N * 2; topQuad(i / 2, j / 2, (i + 1) / 2, (j + 1) / 2, 0, out ? ((i + j) % 2 ? "#A9A79D" : "#A3A197") : ((i + j) % 2 ? "#BDB5A7" : "#B4AB9C"));
   }
   for (let k = 1; k < INX; k++) line(...iso(k, 0), ...iso(k, N), "#A59C8C");
   for (let k = 1; k < N; k++) line(...iso(0, k), ...iso(INX, k), "#A59C8C");
-  for (let k = INX + 2; k < N; k += 2) line(...iso(k, 0), ...iso(k, N), "#97958B");
+  for (let k = INX + 2; k < N; k += 2) line(...iso(k, 0), ...iso(k, NY), "#97958B");
+  for (let k = 2; k < INX; k += 2) line(...iso(k, N), ...iso(k, NY), "#97958B"); for (let k = N + 2; k < NY; k += 2) line(...iso(0, k), ...iso(N, k), "#97958B"); // 앞마당
   // 석고·흙·레진 얼룩 (지저분한 과실)
   // 흰 석고 자국은 긁어서 지울 수 있게 따로 그려요 (PLASTER)
   for (let k = 0; k < 25; k++) stain(rnd() * (INX - 1) + .5, rnd() * 25 + .5, .15 + rnd() * .35, "#8A6A50", .4);
-  for (let k = 0; k < 30; k++) stain(INX + .5 + rnd() * 9, rnd() * 25 + .5, .2 + rnd() * .7, ["#6F8FB0", "#E6E2D6", "#5C5A52"][k % 3], .35);
-  stain(22, 18, 1.1, "#7FA8C8", .35); stain(19.5, 22, .8, "#7FA8C8", .3); // 물웅덩이
+  // (폴리장 얼룩·물웅덩이는 폴리장과 함께 없앴어요: 지금은 빈 야외 공간)
   // 입구 매트
   topQuad(6.6, 25.2, 8.6, 26, 0, "#5A6A4A", "#3a4a2a");
   // 벽: 왼쪽 벽 전체, 뒤쪽 벽은 실내만 (낡은 미색)
@@ -756,12 +756,31 @@ function sawhorses(gx, gy) {
     const [gx2, gy2] = iso(gx + 1.2, gy + .35, 12); px(gx2 - 3, gy2 - 3, 6, 3, "#2E6AD0"); px(gx2 + 3, gy2 - 2, 4, 1, "#3A3A3A"); // 그라인더
   });
 }
-function tarpOverlay() { // 파란 천막 (사람 위로 지나가게 마지막에 그림)
+function tarpOverlay() { // 파란 천막 — 폴리장과 함께 없앰 (쥬 요청)
+  return;
   const z = 46, x0 = 17.6, y0 = 3, x1 = 24.4, y1 = 10.5;
   for (const [x, y] of [[x0, y0], [x1, y0], [x0, y1], [x1, y1]]) { const [a, b] = iso(x, y), [c, d] = iso(x, y, z); line(a, b, c, d, "#6A6A70"); }
   G.globalAlpha = .82; poly([iso(x0, y0, z + 4), iso(x1, y0, z + 4), iso(x1, y1, z), iso(x0, y1, z)], "#3A78D0"); G.globalAlpha = 1;
   for (let k = 1; k < 6; k++) { const yy = y0 + (y1 - y0) * k / 6; line(...iso(x0, yy, z + 4 - 4 * k / 6), ...iso(x1, yy, z + 4 - 4 * k / 6), "#2A60B0"); }
   outline([iso(x0, y0, z + 4), iso(x1, y0, z + 4), iso(x1, y1, z), iso(x0, y1, z)], "#1E4A8A");
+}
+function brickWall(gx, gy, d) { // 빨간 벽돌 벽 (과실 오른쪽)
+  addBlock(gx, gy, .3, d);
+  addObj(gx, gy, .3, d, 40, () => {
+    box(gx, gy, .3, d, 30, "#C85A44", "#B04A36", "#9A3E2E");
+    const X = gx + .3; // 보이는 면에 벽돌 줄눈
+    for (let v = 3; v < 30; v += 3) line(...iso(X, gy, v), ...iso(X, gy + d, v), "#E8B8A8");
+    for (let v = 0, r = 0; v < 30; v += 3, r++) for (let u = (r % 2) * .25; u < d; u += .5) line(...iso(X, gy + u, v), ...iso(X, gy + u, Math.min(30, v + 3)), "#E8B8A8");
+  });
+}
+const DOOR = { x0: 6.3, x1: 8.9 }; // 앞문 (입구 매트 6.6~8.6)
+function frontWall(gx, w) { // 앞쪽 낮은 벽 (안이 잘 보이게 낮게)
+  if (w <= 0) return; addBlock(gx, N - .3, w, .3);
+  addObj(gx, N - .3, w, .3, 14, () => { box(gx, N - .3, w, .3, 12, "#F4F0E6", "#E6E0D2", "#D6CEBE"); });
+}
+function doorFrame() {
+  for (const x of [DOOR.x0 - .15, DOOR.x1]) { addBlock(x, N - .3, .15, .3); addObj(x, N - .3, .15, .3, 50, () => box(x, N - .3, .15, .3, 44, "#8A6A4A", "#6E5238", "#5A422C")); }
+  addObj(DOOR.x0 - .15, N - .3, DOOR.x1 - DOOR.x0 + .3, .3, 52, () => box(DOOR.x0 - .15, N - .3, DOOR.x1 - DOOR.x0 + .3, .3, 4, "#9A7A5A", "#7E5E40", "#684C34", 44));
 }
 function wallSeg(gx, gy, d) { addBlock(gx, gy, .3, d); addObj(gx, gy, .3, d, 40, () => { box(gx, gy, .3, d, 30, "#F4F0E6", "#E6E0D2", "#D6CEBE"); G.globalAlpha = .3; faceQuad(FR(gx, gy, .3, d), .1, 2, d * .5, 9, "#A89E8A"); G.globalAlpha = 1; }); }
 
@@ -919,21 +938,20 @@ function buildWorld() {
   plasterBags(12.0, 3.0); bucket(11.4, 3.4); bucket(13.4, 3.6, "#E8E4DA");
   // 이젤 (가운데 작품 좌대는 쥬 요청으로 없앴어요) + 구석에 쌓인 작품들
   chalkEasel(6.6, 16.6); chalkEasel(11.2, 16.4);
-  pedestal(1.4, 24.6, "torso", 12); pedestal(2.6, 25.0, "bust", 10); pedestal(13.6, 24.6, "figure", 20); pedestal(12.4, 25.0, "abstract", 14);
+  pedestal(1.4, 24.4, "torso", 12); pedestal(2.6, 24.8, "bust", 10); pedestal(13.6, 24.4, "figure", 20); pedestal(12.4, 24.8, "abstract", 14);
   // 쥬 졸업작품: 석고 해골 3개 + 석고 좌대 위 시멘트 두상 3개
   skeleton(10.3, 21.3, 0); skeleton(11.2, 21.3, 1); skeleton(12.1, 21.3, 2);
   cementBust(10.3, 22.7, 0); cementBust(11.2, 22.7, 1); cementBust(12.1, 22.7, 2);
-  boxes(13.0, 6.2); bin(5.6, 2.6, "#4FA040"); bin(4.0, 23.6, "#3A6AD0");
+  boxes(13.0, 6.2); bin(5.6, 2.6, "#4FA040"); // (입구 쪽 파란 통 자리는 분리수거함으로 바뀜)
   // 입구 오른쪽 신발장
   shoeRack(9.0, 24.9);
-  // 과실/폴리장 사이 벽 (셔터로 나가요)
-  for (let y = 0; y < 10; y += 2) wallSeg(INX, y, 2); for (let y = 14; y < N; y += 2) wallSeg(INX, y, Math.min(2, N - y));
-  addObj(INX, 10, .3, 4, 46, () => { box(INX, 10, .3, 4, 6, "#B8BCC2", "#9CA0A8", "#80848C", 26); for (let v = 27; v < 32; v += 2) line(...iso(INX + .3, 10, v), ...iso(INX + .3, 14, v), "#6A6E76"); }, 0);
-  // 야외 폴리장
-  frp(18.2, 4.6); frp(21.2, 6.2); drum(23.6, .6, "#E8B83A"); drum(24.4, .9, "#E8B83A"); drum(24.0, 1.8, "#2F68C8"); drum(25.0, 1.9, "#E8B83A");
-  sawhorses(18.4, 13.2); bucket(21.0, 13.6, "#6F8FB0"); bucket(21.4, 14.0); plasticChair(17.4, 17.4, RED, "e"); plasticChair(17.4, 18.4, BLUE, "e"); bin(17.5, 19.6, "#7A8A9A");
-  streetLight(N + .5, 3.6); streetLight(N + .5, 16.2); streetLight(N + .5, 23.4); busStop(NX - .85, 6.4); // 찻길 가로등·버스 정류장
-  plant(25.0, 12.0, 1.4); plant(25.0, 17.0, 1.3); plant(24.6, 21.6, 1.5); plant(19.6, 24.6, 1.1); frp(23.4, 23.6); drum(17.2, 24.8, "#E8B83A"); drum(25.2, 9.2, "#2F68C8");  WORKS.forEach(workObj); extraProps(); // 친구들이 만든 작품 + 고량주·폐기물장
+  // 오른쪽 벽: 빨간 벽돌로 다 막음 (쥬 요청 — 셔터 없음)
+  for (let y = 0; y < N; y += 2) brickWall(INX, y, Math.min(2, N - y));
+  // 앞쪽 벽: 신발장 옆 문(입구 매트 자리)으로만 드나들어요
+  frontWall(0, DOOR.x0); frontWall(DOOR.x1, INX + .3 - DOOR.x1); doorFrame();
+  // 바깥: 폴리장은 없애고 빈 야외 공간 (찻길 가로등·버스 정류장만)
+  streetLight(N + .5, 3.6); streetLight(N + .5, 16.2); streetLight(N + .5, 25.4); busStop(NX - .85, 6.4);
+  WORKS.forEach(workObj); extraProps(); // 친구들이 만든 작품 + 고량주·분리수거함
   if (!bg) { bg = document.createElement("canvas"); bg.width = WWID; bg.height = WHEI; const q = bg.getContext("2d"); const prev = G; G = q; drawRoom(); G = prev; }
   objs.forEach(bake);
   for (const c of Object.values(CHARS)) c.seat = SEATS.find(s => s.tag === c.homeTag) || null;
@@ -1113,14 +1131,14 @@ function workTable(gx, gy) {
 const onPlat = (x, y) => x >= PLAT.x && x <= PLAT.x + PLAT.w && y >= PLAT.y && y <= PLAT.y + PLAT.d;
 const zAt = (x, y) => onPlat(x, y) ? PLAT.h : 0;
 function blocked(x, y) {
-  if (x < .35 || y < .35 || x > NX - .35 || y > N - .35) return true;
+  if (x < .35 || y < .35 || x > NX - .35 || y > NY - .35) return true;
   for (const b of blocks) if (x > b.x - .22 && x < b.x + b.w + .22 && y > b.y - .22 && y < b.y + b.d + .22) return true;
   return false;
 }
 function findPath(tx, ty, fx = me.x, fy = me.y) {
-  const CS = .5, n = N / CS, ni = NX / CS, ok = (i, j) => i >= 0 && j >= 0 && i < ni && j < n && !blocked((i + .5) * CS, (j + .5) * CS), K = (i, j) => i * 100 + j;
+  const CS = .5, n = NY / CS, ni = NX / CS, ok = (i, j) => i >= 0 && j >= 0 && i < ni && j < n && !blocked((i + .5) * CS, (j + .5) * CS), K = (i, j) => i * 100 + j;
   const si = Math.floor(fx / CS), sj = Math.floor(fy / CS); let ti = Math.floor(tx / CS), tj = Math.floor(ty / CS);
-  if (!ok(ti, tj)) { let bd = 1e9; for (let i = 0; i < ni; i++) for (let j = 0; j < n; j++) if (ok(i, j)) { const dd = (i - ti) ** 2 + (j - tj) ** 2; if (dd < bd) { bd = dd; ti = i; tj = j; } } tx = (ti + .5) * CS; ty = (tj + .5) * CS; }
+  if (!ok(ti, tj)) { let bd = 1e9; const oi = ti, oj = tj; for (let i = 0; i < ni; i++) for (let j = 0; j < n; j++) if (ok(i, j)) { const dd = (i - oi) ** 2 + (j - oj) ** 2; if (dd < bd) { bd = dd; ti = i; tj = j; } } tx = (ti + .5) * CS; ty = (tj + .5) * CS; } // 원래 목표 기준으로 가장 가까운 빈칸 (평상·의자 앉기 고침)
   if (blocked(tx, ty)) { tx = (ti + .5) * CS; ty = (tj + .5) * CS; }
   const prev = new Map([[K(si, sj), null]]), q = [[si, sj]];
   while (q.length) {
@@ -1649,7 +1667,7 @@ let TRASH = null; const TRASHED = new Map(); let carried = 0; const BAG_MAX = 6;
 function makeTrash() {
   const r = scRand(4242), out = [];
   for (let k = 0; out.length < 72 && k < 1400; k++) { const x = .6 + r() * (INX - 1.4), y = .8 + r() * 24.4; if (!blocked(x, y) && !blocked(x + .2, y + .2)) out.push({ id: "t" + out.length, x, y, kind: TRASH_KINDS[Math.floor(r() * TRASH_KINDS.length)], rot: r() < .5 }); }
-  for (let k = 0, n = 0; n < 10 && k < 400; k++) { const x = 16.8 + r() * 8, y = 2 + r() * 22; if (!blocked(x, y) && Math.hypot(x - 22.6, y - 10.4) > 2) { out.push({ id: "o" + n, x, y, kind: TRASH_KINDS[Math.floor(r() * TRASH_KINDS.length)], rot: r() < .5 }); n++; } }
+  // (폴리장 쓰레기는 폴리장과 함께 없앴어요)
   return out;
 }
 const trashGone = id => { const t = TRASHED.get(id); return t && Date.now() - t < 864e5; };
@@ -1690,10 +1708,10 @@ function startTrash() { if (!db) return; db.collection("trash").orderBy("t", "de
 const bagEl = document.createElement("div"); bagEl.hidden = true;
 bagEl.style.cssText = "position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 96px);z-index:30;background:#2a1f18;color:#fff;font:800 .85rem system-ui,sans-serif;padding:8px 14px;border-radius:99px;box-shadow:0 4px 14px rgba(0,0,0,.25);pointer-events:none;white-space:nowrap";
 document.body.appendChild(bagEl);
-function updBag() { bagEl.hidden = !carried; bagEl.textContent = `🗑️ 쓰레기 ${carried}/${BAG_MAX} · 폴리장 옆 폐기물 처리장에 버려줘`; }
+function updBag() { bagEl.hidden = !carried; bagEl.textContent = `🗑️ 쓰레기 ${carried}/${BAG_MAX} · 입구 옆 분리수거함에 버려줘`; }
 
 /* 폐기물 처리장 (폴리장 옆) */
-const DUMP = { x: 21.6, y: 9.4, w: 2.2, d: 1.2 };
+const DUMP = { x: 3.6, y: 22.7, w: 1.5, d: .8 }; // 분리수거함: 과실 입구 안쪽 (폴리장 없앰)
 function wasteYard() {
   const { x, y, w, d } = DUMP; addBlock(x, y, w, d);
   addObj(x, y, w, d, 40, () => {
@@ -1706,7 +1724,7 @@ function wasteYard() {
     const [lx, ly] = iso(x + .4, y + .3, 18); px(lx - 2, ly - 3, 5, 3, "#F2B43A"); px(lx + 5, ly - 2, 3, 2, "#FFFFFF"); // 넘친 쓰레기
   });
 }
-function hitDump(wx, wy) { const [cx, cy] = iso(DUMP.x + DUMP.w / 2, DUMP.y + DUMP.d / 2, 10); return Math.abs(wx - cx) < 28 && Math.abs(wy - cy) < 20; }
+function hitDump(wx, wy) { const [cx, cy] = iso(DUMP.x + DUMP.w / 2, DUMP.y + DUMP.d / 2, 10); return Math.abs(wx - cx) < 20 && Math.abs(wy - cy) < 16; }
 let dumpedTotal = 0;
 function goDump() {
   if (!carried) { if (myChar) bubble(myChar, "버릴 게 없네. 과실 가서 쓰레기 주워 오자"); else showPicker(); return; }
@@ -1847,7 +1865,7 @@ async function trDrop() {
   const o = trDrag.o;
   if (trMode === "pick") {
     if (!inBag(o.x, o.y - 10)) return;
-    if (carried >= BAG_MAX) { [o.x, o.y] = o.home; $("trNote").textContent = "봉투 꽉 찼어! 폴리장 옆 폐기물 처리장에 버리고 오자 🗑️"; return; }
+    if (carried >= BAG_MAX) { [o.x, o.y] = o.home; $("trNote").textContent = "봉투 꽉 찼어! 입구 옆 분리수거함에 버리고 오자 🗑️"; return; }
     o.got = true; trBagShake = 6; carried++; updBag(); TRASHED.set(o.t.id, Date.now()); updTrCount();
     if (db) { try { await db.doc("trash/" + o.t.id).set({ t: Date.now(), by: myId || null }); } catch {} }
     const left = trItems.filter(x => !x.got).length;
@@ -1908,14 +1926,14 @@ function loopTr() {
   cancelAnimationFrame(trRAF); trRAF = requestAnimationFrame(frame);
 }
 function goPick(t) {
-  if (carried >= BAG_MAX) { bubble(myChar, "봉투 꽉 찼다! 폴리장 옆 폐기물 처리장에 버리러 가자 🗑️"); return; }
+  if (carried >= BAG_MAX) { bubble(myChar, "봉투 꽉 찼다! 입구 옆 분리수거함에 버리러 가자 🗑️"); return; }
   walkThen(t.x + .3, t.y + .3, () => openPickGame(t));
 }
 function goDump() {
   if (!carried) { if (myChar) bubble(myChar, "버릴 게 없네. 과실 바닥 쓰레기 눌러서 주워 오자"); else showPicker(); return; }
   walkThen(DUMP.x + 1.0, DUMP.y + DUMP.d + .7, () => openDumpGame());
 }
-function updBag() { bagEl.hidden = !carried; bagEl.textContent = carried >= BAG_MAX ? `🗑️ 봉투 꽉 참! 폴리장 옆 초록 컨테이너를 눌러서 버려줘` : `🗑️ 봉투 ${carried}/${BAG_MAX} · 다 모으면 폴리장 옆 초록 컨테이너에 버려`; }
+function updBag() { bagEl.hidden = !carried; bagEl.textContent = carried >= BAG_MAX ? `🗑️ 봉투 꽉 참! 입구 옆 초록 분리수거함을 눌러서 버려줘` : `🗑️ 봉투 ${carried}/${BAG_MAX} · 다 모으면 입구 옆 초록 분리수거함에 버려`; }
 /* 처음 들어오면 한 번 알려줘요 */
 setTimeout(function hint() { if (!myChar) { setTimeout(hint, 3000); return; } try { if (localStorage.getItem("mc-trash-hint")) return; localStorage.setItem("mc-trash-hint", "1"); } catch {} bubble(myChar, "청소하고 싶으면 오른쪽 아래 🧹 버튼 눌러봐!"); }, 6000);
 /* ---------- 🛒 포인트 상점 + 🏆 순위 (재료 대신 꾸미기·칭호·간식) ---------- */
@@ -2407,6 +2425,7 @@ setTimeout(() => {
 let cleanMode = (() => { try { return localStorage.getItem("mc-clean") === "1"; } catch { return false; } })();
 { const ht = hitTrash; hitTrash = (...a) => cleanMode ? ht(...a) : null; }
 { const hs = hitStain; hitStain = (...a) => cleanMode ? hs(...a) : null; }
+{ const hd = hitDump; hitDump = (...a) => (cleanMode || carried > 0) && hd(...a); } // 입구 옆 분리수거함: 청소할 때만 눌려요
 function setCleanMode(on) {
   cleanMode = on; try { localStorage.setItem("mc-clean", on ? "1" : "0"); } catch {}
   const b = $("cleanBtn"); b.setAttribute("aria-pressed", String(on)); b.title = on ? "청소 모드 끄기" : "청소 모드 켜기";
