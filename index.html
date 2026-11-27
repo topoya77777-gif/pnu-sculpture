@@ -643,13 +643,22 @@ function pollyYard() {
 }
 /* 🌸 앞마당 등나무 쉼터: 나무 기둥 + 등나무 지붕(보라 꽃 주렁주렁) + 아래 마주 보는 벤치 */
 const WIST = { x0: 4, y0: 37, x1: 12.5, y1: 43, H: 50 };
-function bench(gx, gy, w) { // 나무 벤치 (x 방향으로 길게), 눌러서 앉아요
-  const d = .55; addBlock(gx, gy, w, d);
-  for (let u = .45; u < w - .2; u += .8) SEATS.push({ x: gx + u, y: gy + d / 2, h: 8 });
-  addObj(gx, gy, w, d, 14, () => {
-    for (const lx of [.1, w - .22]) box(gx + lx, gy + .08, .12, d - .16, 6, "#6E5238", "#5A422C", "#46321E");
-    box(gx, gy, w, d, 2, "#C89A62", "#A87C48", "#8A6034", 6);
-    for (let u = .25; u < w; u += .25) line(...iso(gx + u, gy, 8), ...iso(gx + u, gy + d, 8), "#B08550");
+const DARKWOOD = ["#6B4A2E", "#563A22", "#432C18"]; // 진한 우드색 (벤치·테이블)
+function bench(gx, gy, len) { // 진한 나무 벤치 (y 방향으로 길게), 눌러서 앉아요
+  const w = .55; addBlock(gx, gy, w, len);
+  for (let v = .45; v < len - .2; v += .8) SEATS.push({ x: gx + w / 2, y: gy + v, h: 8 });
+  addObj(gx, gy, w, len, 14, () => {
+    for (const ly of [.1, len - .22]) box(gx + .08, gy + ly, w - .16, .12, 6, "#3A2616", "#2E1E10", "#24170C");
+    box(gx, gy, w, len, 2, ...DARKWOOD, 6);
+    for (let v = .3; v < len; v += .3) line(...iso(gx, gy + v, 8), ...iso(gx + w, gy + v, 8), "#7A5636");
+  });
+}
+function woodTable(gx, gy, w, len) { // 진한 나무 테이블
+  addBlock(gx, gy, w, len);
+  addObj(gx, gy, w, len, 18, () => {
+    for (const [a, b] of [[.08, .1], [w - .2, .1], [.08, len - .22], [w - .2, len - .22]]) box(gx + a, gy + b, .12, .12, 11, "#3A2616", "#2E1E10", "#24170C");
+    box(gx, gy, w, len, 2, ...DARKWOOD, 11);
+    for (let v = .35; v < len; v += .35) line(...iso(gx, gy + v, 13), ...iso(gx + w, gy + v, 13), "#7A5636");
   });
 }
 function wisteriaYard() {
@@ -657,8 +666,9 @@ function wisteriaYard() {
   for (const [px2, py2] of [[x0, y0], [x1 - .25, y0], [x0, y1 - .25], [x1 - .25, y1 - .25], [(x0 + x1) / 2, y0], [(x0 + x1) / 2, y1 - .25]]) {
     addBlock(px2, py2, .25, .25); addObj(px2, py2, .25, .25, H + 4, () => { box(px2, py2, .25, .25, H, "#9A7450", "#7E5C3C", "#664A30"); line(...iso(px2 + .12, py2 + .25, 4), ...iso(px2 + .18, py2 + .25, H - 4), "#5E8A3A"); }); // 기둥 + 감고 올라가는 덩굴
   }
-  bench(x0 + .8, y0 + 1.0, x1 - x0 - 1.6); bench(x0 + .8, y1 - 1.6, x1 - x0 - 1.6); // 지붕 아래 마주 보는 벤치
-  bench(x1 + 3, y0 + 2.2, 3.2); bench(x1 + 3, y1 + 1.4, 3.2); // 바깥 벤치
+  // 지붕 아래: 二자로 마주 보는 벤치 2개 + 가운데 나무 테이블 (진한 우드)
+  const cx = (x0 + x1) / 2, ly0 = y0 + .8, L = y1 - y0 - 1.6;
+  bench(cx - 1.75, ly0, L); woodTable(cx - .7, ly0 + .1, 1.4, L - .2); bench(cx + 1.2, ly0, L);
 }
 function wisteriaRoof() { // 사람 위로 그려요 (살짝 비치게)
   const { x0, y0, x1, y1, H } = WIST; let sd = 4242; const r = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
