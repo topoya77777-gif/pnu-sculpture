@@ -206,7 +206,7 @@ button { touch-action: manipulation; }
     <div class="menu" id="poseMenu" hidden></div>
     <button type="button" id="carBtn" class="car-btn" hidden>🚗 내리기</button>
     <div class="menu" id="outfitMenu" hidden aria-label="옷 갈아입기"></div>
-    <div class="menu work-menu" id="workMenu" hidden><div id="workInfo" class="work-info"></div><button type="button" id="workLike" class="work-like" aria-pressed="false">🤍 좋아요 0</button><div id="workCmts" class="work-cmts"></div><form id="workCmtForm" class="work-cmt-form"><input id="workCmtIn" maxlength="80" autocomplete="off" placeholder="댓글 달기"><button type="submit">등록</button></form><button type="button" id="workDel">🔨 내 작품 치우기</button><button type="button" id="workClose">닫기</button></div>
+    <div class="menu work-menu" id="workMenu" hidden><div id="workInfo" class="work-info"></div><button type="button" id="workLike" class="work-like" aria-pressed="false">🤍 좋아요 0</button><div id="workCmts" class="work-cmts"></div><form id="workCmtForm" class="work-cmt-form"><input id="workCmtIn" maxlength="80" autocomplete="off" placeholder="댓글 달기"><button type="submit">등록</button></form><button type="button" id="workMove">✋ 내 작품 옮기기</button><button type="button" id="workDel">🔨 내 작품 치우기</button><button type="button" id="workClose">닫기</button></div>
     <div class="help" id="help">방향키·바닥 클릭 걷기 · 의자·평상 누르면 앉기 · 락커 누르면 옷 갈아입기 · 1~4 자세 · Enter 채팅</div>
   </div>
   <aside class="chat" id="chat" aria-label="채팅">
@@ -1592,7 +1592,7 @@ let menuWork = null;
 function showWorkMenu(w) {
   menuWork = w; const m = $("workMenu"), mine = w.by ? w.by === myId : w.c === myChar;
   $("workInfo").textContent = `'${w.name || "무제"}' · ${(CHARS[w.c] || { name: "?" }).name} 작품 · ${(MATS[w.mat] || MATS.plaster).name}`;
-  $("workDel").hidden = !mine; m.hidden = false;
+  $("workDel").hidden = !mine; $("workMove").hidden = !mine; m.hidden = false;
   const social = !!db && !String(w.id).startsWith("local");
   $("workLike").hidden = $("workCmts").hidden = $("workCmtForm").hidden = !social;
   if (social) { $("workCmts").scrollTop = 1e6; renderWorkSocial(); }
@@ -1621,6 +1621,7 @@ async function removeWork() {
   $("sgClose").onclick = () => $("sculptDlg").close();
   $("sculptBtn").onclick = () => { $("sgNote").textContent = ""; $("sculptDlg").showModal(); drawGrid(); };
   $("workDel").onclick = () => removeWork();
+  $("workMove").onclick = () => { movingWork = menuWork; $("workMenu").hidden = true; if (myChar) bubble(myChar, "✋ 작품 옮길 자리를 바닥에서 눌러줘! (작품 다시 누르면 취소)"); };
   $("workClose").onclick = () => { $("workMenu").hidden = true; menuWork = null; };
   $("workLike").onclick = () => toggleLike();
 
@@ -2840,9 +2841,31 @@ const vehRiderH = vid => (VEH[vid] ? VEH[vid].riderH : 9);
 const vehHides = vid => !!(VEH[vid] && VEH[vid].hide);
 function updCarBtn() { const b = $("carBtn"); if (b) b.hidden = !(me.cs >= 0); }
 { const sp = setPose; setPose = p => { if (me.cs >= 0) return; sp(p); }; } // 차 안에서는 자세 그대로
+/* ✋ 작품 옮기기: 내 작품 메뉴에서 "옮기기" → 바닥을 누르면 그 자리로 (만든 사람만) */
+let movingWork = null;
+function workSpotFree(w, x, y) {
+  if (x < .4 || y < .4 || x > NX - 1.2 || y > NY - 1.2) return false;
+  for (let a = 0; a <= .8; a += .4) for (let b = 0; b <= .8; b += .4) {
+    const px2 = x + a, py2 = y + b;
+    for (const k of blocks) { if (k.x === w.x && k.y === w.y && k.w === .8 && k.d === .8) continue; if (px2 > k.x - .1 && px2 < k.x + k.w + .1 && py2 > k.y - .1 && py2 < k.y + k.d + .1) return false; }
+  }
+  return true;
+}
+async function moveWorkTo(w, gx, gy) {
+  const x = Math.round((gx - .4) * 2) / 2, y = Math.round((gy - .4) * 2) / 2;
+  if (!workSpotFree(w, x, y)) { bubble(myChar, "거긴 자리가 없어… 빈 바닥을 눌러줘"); return false; }
+  if (db && !String(w.id).startsWith("local")) { try { await db.doc("works/" + w.id).update({ x, y }); } catch { bubble(myChar, "내 작품만 옮길 수 있어"); return true; } }
+  else { w.x = x; w.y = y; buildWorld(); }
+  bubble(myChar, `'${w.name || "무제"}' 옮겼다! ✋`); return true;
+}
 cv.addEventListener("pointerdown", e => { // 차 관련 누르기를 먼저 처리해요
   if (!myChar || blockedUI()) return;
   const [wx, wy] = toWorld(e);
+  if (movingWork) { // ✋ 작품 옮기는 중
+    e.stopImmediatePropagation();
+    const hw = hitWork(wx, wy); if (hw && hw.id === movingWork.id) { movingWork = null; bubble(myChar, "옮기기 취소"); return; }
+    const [gx, gy] = toGrid(wx, wy); moveWorkTo(movingWork, gx, gy).then(ok => { if (ok) movingWork = null; }); return;
+  }
   if (me.cs >= 0) {
     e.stopImmediatePropagation();
     if (hitVeh(wx, wy) === myVeh()) { leaveCar(); return; }
