@@ -111,6 +111,8 @@ dialog p { margin: 0 0 14px; color: var(--muted); font-size: .88rem; }
 .menu [hidden] { display: none !important; }
 .jump-btn { position: absolute; right: 12px; bottom: 12px; z-index: 20; width: 52px; height: 52px; border: 0; border-radius: 50%; background: var(--panel); box-shadow: 0 4px 14px rgba(0,0,0,.2); font-size: 1.6rem; cursor: pointer; touch-action: manipulation; }
 .jump-btn:active { transform: scale(.9); }
+.car-btn { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 21; border: 0; border-radius: 999px; padding: 12px 20px; background: #26242E; color: #fff; font: 800 1rem "Noto Sans KR", sans-serif; box-shadow: 0 0 0 3px #FF6FA8, 0 4px 14px rgba(0,0,0,.25); cursor: pointer; }
+.car-btn[hidden] { display: none; }
 .clean-btn { bottom: 74px; opacity: .6; } .clean-btn[aria-pressed="true"] { opacity: 1; background: #FFE66A; box-shadow: 0 0 0 3px #e0577f, 0 4px 14px rgba(0,0,0,.2); }
 .eye-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 6px; max-height: 55vh; overflow-y: auto; padding: 2px; }
 .eye-opt { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px !important; border: 2px solid transparent !important; border-radius: 12px !important; background: var(--bg) !important; color: var(--fg) !important; font-size: .7rem !important; min-height: 58px; cursor: pointer; }
@@ -177,6 +179,7 @@ button { touch-action: manipulation; }
     </div>
     <div class="menu" id="poseMenu" hidden></div>
     <button type="button" id="jumpBtn" class="jump-btn" aria-label="점프">🦘</button>
+    <button type="button" id="carBtn" class="car-btn" hidden>🚗 내리기</button>
     <button type="button" id="cleanBtn" class="jump-btn clean-btn" aria-label="청소 모드" aria-pressed="false">🧹</button>
     <div class="menu" id="outfitMenu" hidden aria-label="옷 갈아입기"></div>
     <div class="menu work-menu" id="workMenu" hidden><div id="workInfo" class="work-info"></div><button type="button" id="workLike" class="work-like" aria-pressed="false">🤍 좋아요 0</button><div id="workCmts" class="work-cmts"></div><form id="workCmtForm" class="work-cmt-form"><input id="workCmtIn" maxlength="80" autocomplete="off" placeholder="댓글 달기"><button type="submit">등록</button></form><button type="button" id="workDel">🔨 내 작품 치우기</button><button type="button" id="workClose">닫기</button></div>
@@ -2255,7 +2258,8 @@ let lastSent = "", lastSentAt = 0;
 setInterval(() => pushPresence(true), 20000); // 20초마다 "나 아직 있어" 신호: 창을 닫거나 앱을 끄면 1분쯤 뒤 캐릭터가 풀려요
 function pushPresence(force = false) {
   if (!room || !myChar) return;
-  const p = { c: myChar, x: Math.round(me.x * 100) / 100, y: Math.round(me.y * 100) / 100, p: me.pose, f: me.flip ? 1 : 0, s: me.step > 0 ? 1 : 0, h: me.seat ? me.seat.h : 0, o: myOutfit, dr: drunk, ac: myAcc, id: myId || null, r: me.running && me.step > 0 ? 1 : 0, j: me.jumpN || 0, ey: myEye || "" };
+  const p = { c: myChar, x: Math.round(me.x * 100) / 100, y: Math.round(me.y * 100) / 100, p: me.pose, f: me.flip ? 1 : 0, s: me.step > 0 ? 1 : 0, h: me.cs >= 0 ? CAR_H : me.seat ? me.seat.h : 0, o: myOutfit, dr: drunk, ac: myAcc, id: myId || null, r: me.running && me.step > 0 ? 1 : 0, j: me.jumpN || 0, ey: myEye || "", cs: me.cs >= 0 ? me.cs : -1 };
+  if (me.cs === 0) { p.cx = Math.round(NCAR.x * 100) / 100; p.cy = Math.round(NCAR.y * 100) / 100; p.ca = NCAR.a; } // 🚗 운전자가 차 위치를 알려줘요
   const k = JSON.stringify(p), now = performance.now();
   if (!force && (k === lastSent || now - lastSentAt < 90)) return;
   lastSent = k; lastSentAt = now; room.presence(p).catch(() => {});
@@ -2270,6 +2274,7 @@ function onPeers({ peers }) {
     let o = others.get(pr.peer);
     if (!o) { o = { x: +pp.x || 0, y: +pp.y || 0, step: 0, jumpN: +pp.j || 0 }; others.set(pr.peer, o); }
     if ((+pp.j || 0) !== o.jumpN) { o.jumpN = +pp.j || 0; o.jumpAt = performance.now(); } // 친구가 점프하면 내 화면에서도 콩
+    o.cs = Number.isInteger(pp.cs) ? pp.cs : -1; o.car = o.cs === 0 && typeof pp.cx === "number" ? { x: pp.cx, y: pp.cy, a: (+pp.ca || 0) & 3 } : null;
     o.running = !!pp.r; o.eye = typeof pp.ey === "string" ? pp.ey.slice(0, 4) : "";
     Object.assign(o, { peer: pr.peer, by: pr.by || pp.id || null, char: pp.c, tx: +pp.x || 0, ty: +pp.y || 0, pose: pp.p || "stand", flip: !!pp.f, walking: !!pp.s, h: +pp.h || 0, outfit: OUTFITS[pp.o] ? pp.o : "normal", drunk: Math.min(4, +pp.dr || 0), acc: typeof pp.ac === "string" ? pp.ac.slice(0, 12) : "" });
   }
@@ -2433,6 +2438,108 @@ function setCleanMode(on) {
 }
 setTimeout(() => { $("cleanBtn").onclick = e => { e.stopPropagation(); setCleanMode(!cleanMode); }; $("cleanBtn").setAttribute("aria-pressed", String(cleanMode)); }, 0);
 
+/* ---------- 🚗 나정카: 5명까지 타요 (0번 = 운전석, 운전석에 탄 사람이 운전) ----------
+   운전자: 방향키 또는 가고 싶은 곳 누르기. 차를 다시 누르거나 "내리기" 버튼으로 내려요.
+   차 위치는 운전자 접속 정보(cx·cy·ca)로 모두에게 보이고, 내리면 data/carpark 에 주차 위치를 남겨요. */
+const CAR_L = 2.6, CAR_W = 1.5, CAR_H = 9, CAR_SPEED = 6;
+const CAR_SEATS = [[.45, -.36], [.45, .36], [-.6, -.42], [-.6, 0], [-.6, .42]]; // [앞뒤, 왼쪽(-)/오른쪽(+)] 0=운전석(왼쪽 앞)
+const CAR_FWD = [[0, 1], [1, 0], [0, -1], [-1, 0]];
+let NCAR = { x: 20, y: 28, a: 1 }, carPark = { x: 20, y: 28, a: 1 }, carTarget = null;
+me.cs = -1;
+function carDims(a) { return a % 2 ? [CAR_L, CAR_W] : [CAR_W, CAR_L]; }
+function seatPos(car, k) { const [fx, fy] = CAR_FWD[car.a], lx = fy, ly = -fx, [f, s] = CAR_SEATS[k]; return [car.x + fx * f - lx * s, car.y + fy * f - ly * s]; }
+function carBlockedAt(x, y, a) {
+  const [w, d] = carDims(a);
+  for (const [px2, py2] of [[x, y], [x - w / 2, y - d / 2], [x + w / 2, y - d / 2], [x - w / 2, y + d / 2], [x + w / 2, y + d / 2]]) {
+    if (px2 < .3 || py2 < .3 || px2 > NX - .3 || py2 > NY - .3) return true;
+    if (px2 < INX + .5 && py2 < N + .4) return true; // 과실 안으로는 못 들어가요
+    for (const b of blocks) if (px2 > b.x - .05 && px2 < b.x + b.w + .05 && py2 > b.y - .05 && py2 < b.y + b.d + .05) return true;
+  }
+  return false;
+}
+function currentCar() { // 지금 차 위치: 운전자가 있으면 운전자 기준, 없으면 주차 위치
+  if (me.cs === 0) return NCAR;
+  for (const o of others.values()) if (o.cs === 0 && o.car) return o.car;
+  return carPark;
+}
+function takenSeats() { const t = new Set(); for (const o of others.values()) if (o.cs >= 0) t.add(o.cs); return t; }
+function hitNCar(wx, wy) { const c = currentCar(), [x, y] = iso(c.x, c.y, 8); return Math.abs(wx - x) < 30 && Math.abs(wy - y) < 18; }
+function boardCar() {
+  const c = currentCar(), taken = takenSeats(), k = [0, 1, 2, 3, 4].find(i => !taken.has(i));
+  if (k === undefined) { bubble(myChar, "나정카 꽉 찼어! 5명이 정원이야 🚗"); return; }
+  const [sx, sy] = seatPos(c, k);
+  if (Math.hypot(me.x - c.x, me.y - c.y) > 2.6) { // 멀면 차 옆까지 걸어가서 타요
+    walkThen(c.x + (c.a % 2 ? 0 : -1.3), c.y + (c.a % 2 ? 1.2 : 0), () => boardCar()); return;
+  }
+  if (me.seat) standUp(me); me.path = []; me.wantSeat = null; carTarget = null;
+  me.cs = k; me.pose = "sit"; me.x = sx; me.y = sy; me.flip = CAR_FWD[c.a][0] - CAR_FWD[c.a][1] < 0;
+  if (k === 0) NCAR = { ...c };
+  updCarBtn(); pushPresence(true);
+  bubble(myChar, k === 0 ? "부릉부릉~ 나정카 출발! 🚗💨 (방향키 / 갈 곳 누르기)" : ["조수석 탑승! 🚗", "뒷자리 탑승 🚗", "뒷자리 가운데 🚗", "뒷자리 탑승 🚗"][k - 1]);
+}
+function leaveCar() {
+  const c = currentCar(), was = me.cs; me.cs = -1; me.pose = "stand"; carTarget = null;
+  const [fx, fy] = CAR_FWD[c.a], lx = fy, ly = -fx, side = CAR_SEATS[was] ? (CAR_SEATS[was][1] < 0 ? -1 : 1) : -1;
+  let ex = c.x - lx * side * 1.3, ey = c.y - ly * side * 1.3; if (blocked(ex, ey)) { ex = c.x + lx * side * 1.3; ey = c.y + ly * side * 1.3; }
+  if (blocked(ex, ey)) { ex = c.x + fx * 2; ey = c.y + fy * 2; }
+  me.x = ex; me.y = ey;
+  if (was === 0) { carPark = { ...NCAR }; if (db) db.collection("carpark").add({ x: NCAR.x, y: NCAR.y, a: NCAR.a, t: Date.now(), by: myId || null }).catch(() => {}); }
+  updCarBtn(); pushPresence(true);
+}
+function carTick(dt) {
+  if (me.cs === 0) { // 운전
+    const kx = (keys.ArrowRight || keys.d ? 1 : 0) - (keys.ArrowLeft || keys.a ? 1 : 0), ky = (keys.ArrowDown || keys.s ? 1 : 0) - (keys.ArrowUp || keys.w ? 1 : 0);
+    let vx = 0, vy = 0;
+    if ((kx || ky) && !blockedUI()) { vx = kx; vy = ky; carTarget = null; } // →← : 가로(찻길 건너는 방향), ↑↓ : 세로(찻길 따라)
+    else if (carTarget) { vx = carTarget[0] - NCAR.x; vy = carTarget[1] - NCAR.y; if (Math.hypot(vx, vy) < .15) { carTarget = null; vx = vy = 0; } }
+    if (vx || vy) {
+      const a = Math.abs(vx) > Math.abs(vy) ? (vx > 0 ? 1 : 3) : (vy > 0 ? 0 : 2), [fx, fy] = CAR_FWD[a], st = CAR_SPEED * dt;
+      const nx = NCAR.x + fx * st, ny = NCAR.y + fy * st;
+      if (!carBlockedAt(nx, ny, a)) NCAR = { x: nx, y: ny, a }; else if (a !== NCAR.a && !carBlockedAt(NCAR.x, NCAR.y, a)) NCAR = { ...NCAR, a }; else carTarget = null;
+    }
+  }
+  const c = currentCar(), [sx, sy] = seatPos(c, me.cs); me.x = sx; me.y = sy; me.pose = "sit"; me.step = 0;
+  me.flip = CAR_FWD[c.a][0] - CAR_FWD[c.a][1] < 0;
+  if (me.cs > 0 && ![...others.values()].some(o => o.cs === 0) && Math.hypot(c.x - carPark.x, c.y - carPark.y) > .01) {} // 운전자 없으면 주차 자리에 그대로
+}
+function startCarPark() { if (!db) return; db.collection("carpark").orderBy("t", "desc").limit(1).onSnapshot(s => { const d = s.docs[0] && s.docs[0].data(); if (d && typeof d.x === "number" && !carBlockedAt(d.x, d.y, (d.a || 0) & 3)) carPark = { x: d.x, y: d.y, a: (d.a || 0) & 3 }; }, () => {}); }
+function najeongCarItems() {
+  const c = currentCar(), [w, d] = carDims(c.a), x0 = c.x - w / 2, y0 = c.y - d / 2, base = c.x + c.y;
+  const BK = "#26242E", BKd = "#18161E", BKl = "#3A3646", PK = "#FF6FA8";
+  const [fx, fy] = CAR_FWD[c.a];
+  return [
+    { d: base - 3, f: () => { // 차체 (사람보다 먼저)
+      for (const [a, b] of [[.15, .3], [w - .15, .3], [.15, d - .3], [w - .15, d - .3]]) { const [qx, qy] = iso(x0 + a, y0 + b, 2); disc(qx, qy, 3, "#0E0E12"); px(qx - 1, qy - 1, 2, 2, "#6A6A74"); }
+      box(x0, y0, w, d, 7, BKl, BK, BKd, 2);
+      const st = c.a % 2 ? [[x0, y0 + d - .12, w, .12]] : [[x0 + w - .12, y0, .12, d]]; for (const [sx2, sy2, sw, sd] of st) box(sx2, sy2, sw, sd, 2, PK, "#D84A88", "#B83A70", 5); // 핑크 줄
+      topQuad(x0 + .12, y0 + .12, x0 + w - .12, y0 + d - .12, 9, "#5A3A4A"); // 시트
+    } },
+    { d: base + 4, f: () => { // 앞유리 · 헤드라이트 · 번호판 (사람 위로)
+      const fxp = c.x + fx * (CAR_L / 2 - .5), fyp = c.y + fy * (CAR_L / 2 - .5), [gw, gd] = c.a % 2 ? [.1, w - .2] : [w - .2, .1];
+      G.globalAlpha = .45; box(fxp - gw / 2, fyp - gd / 2, gw, gd, 8, "#CFE8F8", "#A8D0EC", "#88B8DC", 9); G.globalAlpha = 1;
+      const hx = c.x + fx * CAR_L / 2, hy = c.y + fy * CAR_L / 2, [lx, ly] = [fy, -fx];
+      for (const s of [-.45, .45]) { const [qx, qy] = iso(hx + lx * s, hy + ly * s, 6); px(qx - 1, qy - 1, 3, 2, "#FFF6B0"); }
+      const bx = c.x - fx * CAR_L / 2, by = c.y - fy * CAR_L / 2, [qx, qy] = iso(bx, by, 6); px(qx - 6, qy - 2, 13, 5, "#FFFFFF"); px(qx - 5, qy - 1, 11, 3, "#F4E04A");
+    } },
+  ];
+}
+DEPTS.push({ name: "🚗 나정카", get at() { const c = currentCar(); return [c.x, c.y, 34]; }, color: "#d84a88" });
+function updCarBtn() { const b = $("carBtn"); if (b) b.hidden = !(me.cs >= 0); }
+{ const sp = setPose; setPose = p => { if (me.cs >= 0) return; sp(p); }; } // 차 안에서는 자세 그대로
+cv.addEventListener("pointerdown", e => { // 차 관련 누르기를 먼저 처리해요
+  if (!myChar || blockedUI()) return;
+  const [wx, wy] = toWorld(e);
+  if (me.cs >= 0) {
+    e.stopImmediatePropagation();
+    if (hitNCar(wx, wy)) { leaveCar(); return; }
+    if (me.cs === 0) { let [gx, gy] = toGrid(wx, wy); carTarget = [gx, gy]; }
+    return;
+  }
+  if (hitNCar(wx, wy)) { e.stopImmediatePropagation(); boardCar(); }
+}, true);
+setTimeout(() => { const b = $("carBtn"); if (b) b.onclick = e => { e.stopPropagation(); if (me.cs >= 0) leaveCar(); }; updCarBtn(); startCarPark(); }, 0);
+addEventListener("keydown", e => { if ((e.key === "e" || e.key === "E") && me.cs >= 0 && !/INPUT|TEXTAREA/.test(e.target.tagName)) leaveCar(); });
+
 /* 입력 */
 const blockedUI = () => $("pickDlg").open || $("eyeDlg").open || $("sculptDlg").open || $("boardDlg").open || !$("lightbox").hidden;
 addEventListener("keydown", e => {
@@ -2510,7 +2617,8 @@ const SPEED = 3.4;
 function tick(now) {
   const dt = Math.min(0.033, (now - last) / 1000); last = now;
   let moving = false, sdx = 0;
-  if (!blockedUI() && myChar) {
+  if (myChar && me.cs >= 0) carTick(dt); // 🚗 나정카에 타고 있으면 차가 움직여요
+  else if (!blockedUI() && myChar) {
     const kx = (keys.ArrowRight || keys.d ? 1 : 0) - (keys.ArrowLeft || keys.a ? 1 : 0), ky = (keys.ArrowDown || keys.s ? 1 : 0) - (keys.ArrowUp || keys.w ? 1 : 0);
     if (kx || ky) {
       if (me.pose !== "stand") standUp(me); me.wantSeat = null; me.path = [];
@@ -2530,7 +2638,7 @@ function tick(now) {
   // 친구들 위치는 부드럽게 따라가요
   for (const o of others.values()) { const k = Math.min(1, dt * 10); o.x += (o.tx - o.x) * k; o.y += (o.ty - o.y) * k; o.step = o.walking ? o.step + dt * (o.running ? 12 : 8) : 0; }
   updateNpcs(dt, now);
-  if (myChar && now - lastHonk > 6000 && CARS.some(c => { const [x, y] = carPos(c, now); return Math.abs(me.x - (x + .45)) < .8 && Math.abs(me.y - (y + .85)) < 1.4; })) { lastHonk = now; bubble(myChar, "빵빵! 🚗 차 조심!"); } // 찻길 한가운데 있으면
+  if (myChar && !(me.cs >= 0) && now - lastHonk > 6000 && CARS.some(c => { const [x, y] = carPos(c, now); return Math.abs(me.x - (x + .45)) < .8 && Math.abs(me.y - (y + .85)) < 1.4; })) { lastHonk = now; bubble(myChar, "빵빵! 🚗 차 조심!"); } // 찻길 한가운데 있으면
   pushPresence();
   draw(now);
   requestAnimationFrame(tick);
@@ -2558,10 +2666,10 @@ function draw(now) {
     [[.2, 3, "#E06A4A"], [.45, 3, "#7FB4EA"], [.7, 3, "#FFD84A"], [.2, 14, "#FF8FB1"], [.5, 14, "#A8D870"]].forEach(([u, v, c]) => faceQuad(f, u, v, u + .2, v + 5, c, OLC));
     poly([f(.94, 1), f(.94, 37), iso(1.75, 11.45, 37), iso(1.75, 11.45, 1)], "#F4F4F4"); outline([f(.94, 1), f(.94, 37), iso(1.75, 11.45, 37), iso(1.75, 11.45, 1)]);
   } });
-  list.push(boardItem()); list.push(...carItems(now)); // 🚗 찻길 차
+  list.push(boardItem()); list.push(...carItems(now)); list.push(...najeongCarItems()); // 🚗 찻길 차 + 나정카
   // 캐릭터: 나, 접속한 친구, 비어 있는 캐릭터(자기 자리에 앉아 있음)
   const actors = [];
-  if (myChar) actors.push({ c: myChar, x: me.x, y: me.y, pose: me.pose, flip: me.flip, step: me.step, h: me.seat ? me.seat.h : 0, me: true, outfit: myOutfit, drunk, acc: myAcc, running: me.running, jumpAt: me.jumpAt, eye: myEye });
+  if (myChar) actors.push({ c: myChar, x: me.x, y: me.y, pose: me.pose, flip: me.flip, step: me.step, h: me.cs >= 0 ? CAR_H : me.seat ? me.seat.h : 0, me: true, outfit: myOutfit, drunk, acc: myAcc, running: me.running, jumpAt: me.jumpAt, eye: myEye });
   for (const o of others.values()) actors.push({ c: o.char, x: o.x, y: o.y, pose: o.pose, flip: o.flip, step: o.step, h: o.h, outfit: o.outfit, drunk: o.drunk, acc: o.acc, running: o.running, jumpAt: o.jumpAt, eye: o.eye });
   const used = new Set(actors.map(a => a.c));
   for (const [id, c] of Object.entries(CHARS)) if (!used.has(id) && c.seat) { const n = npcOf(id); actors.push({ c: id, x: n.x, y: n.y, pose: n.pose, flip: n.flip, step: n.step, h: n.pose === "stand" ? 0 : n.h, away: true }); }
