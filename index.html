@@ -527,7 +527,8 @@ const DEPTS = [
   { name: "라꾸라꾸 존", at: [1.6, 2.4, 36], color: "#4a6a9a" },
   { name: "개인 작업대", at: [10.4, .4, 64], color: "#8a8478" },
   { name: "쥬 졸업작품", at: [11.2, 21.0, 46], color: "#5a5048" },
-  { name: "야외", at: [(INX + OUTX) / 2, 7.2, 64], color: "#5a7a5a" },
+  { name: "야외", at: [31, 7.2, 40], color: "#5a7a5a" },
+  { name: "🪨 석조실", at: [INX + 2 + 4.5, 6.8, 62], color: "#7a7468" },
   { name: "입구", at: [7.6, 27.4, 30], color: "#8a6a4a" },
   { name: "부산대 앞 찻길", at: [OUTX + 3.6, 1.0, 40], color: "#4a4c58" },
 ];
@@ -562,6 +563,44 @@ function outdoorStairs() {
     }
     const [sx, sy] = iso(x + w / 2, y + .3, top + 2); px(sx - 7, sy - 12, 14, 10, "#F2C230"); px(sx - 6, sy - 11, 12, 8, "#2A2A2A"); px(sx - 4, sy - 9, 8, 1, "#F2C230"); px(sx - 4, sy - 6, 8, 1, "#F2C230"); // 🚧 공사중 표지
   });
+}
+/* 🪨 석조실: 과실 옆(사람 다닐 길 1.7칸 띄움)에 하얀 천막. 뒤·과실 쪽은 흰 천 벽, 앞·오른쪽은 열려 있어요 */
+const STONE = { x0: INX + .3 + 1.7, y0: 6.6, x1: INX + .3 + 1.7 + 9, y1: 16.8, H: 44, R: 54 };
+function stoneRoom() {
+  const { x0, y0, x1, y1, H } = STONE, W = x1 - x0, D = y1 - y0, CV = ["#F7F7F2", "#E6E6DE", "#D2D2CA"];
+  // 바닥 (돌가루 뽀얀 시멘트)
+  addObj(x0, y0, W, D, 2, () => { topQuad(x0, y0, x1, y1, 0, "#DAD7CF"); seed = 77; G.globalAlpha = .5; for (let k = 0; k < 70; k++) { const x = x0 + .2 + rnd() * (W - .4), y = y0 + .2 + rnd() * (D - .4), r = .08 + rnd() * .25; topQuad(x, y, x + r, y + r * .8, 0, rnd() < .5 ? "#F2F0EA" : "#C8C4BA"); } G.globalAlpha = 1; });
+  objs[objs.length - 1].depth = -99; // 바닥은 제일 먼저
+  // 흰 천 벽: 뒤쪽 + 과실 쪽 (주름 줄)
+  addBlock(x0, y0, W, .12); addObj(x0, y0, W, .12, H + 6, () => { box(x0, y0, W, .12, H, ...CV); for (let u = .6; u < W; u += .9) line(...iso(x0 + u, y0 + .12, 2), ...iso(x0 + u, y0 + .12, H - 2), "#E0E0D8"); });
+  addBlock(x0, y0, .12, D); addObj(x0, y0, .12, D, H + 6, () => { box(x0, y0, .12, D, H, ...CV); for (let u = .6; u < D; u += .9) line(...iso(x0 + .12, y0 + u, 2), ...iso(x0 + .12, y0 + u, H - 2), "#E0E0D8"); });
+  // 기둥 (열린 쪽)
+  for (const [px2, py2] of [[x1 - .12, y0], [x1 - .12, (y0 + y1) / 2], [x1 - .12, y1 - .12], [x0, y1 - .12], [(x0 + x1) / 2, y1 - .12]]) { addBlock(px2, py2, .12, .12); addObj(px2, py2, .12, .12, H + 4, () => box(px2, py2, .12, .12, H, "#C8CCD2", "#A8ACB4", "#8A8E96")); }
+  // 돌덩이들 (석재)
+  const rock = (x, y, w, d, h, c) => { addBlock(x, y, w, d); addObj(x, y, w, d, h + 6, () => { box(x, y, w, d, h, avShade(c, .18), c, avShade(c, -.2)); seed = Math.round(x * 13 + y * 7); for (let k = 0; k < 5; k++) { const [sx, sy] = iso(x + rnd() * w, y + d, 2 + rnd() * (h - 4)); px(sx, sy, 2, 1, avShade(c, -.35)); } }); };
+  rock(x0 + .6, y0 + .5, 1.6, 1.1, 14, "#B8B4AC"); rock(x0 + 2.6, y0 + .45, 1.1, .9, 20, "#A8A49C"); rock(x0 + .6, y0 + 2.1, .9, .9, 9, "#C4C0B8"); rock(x1 - 2.2, y0 + .5, 1.4, 1.0, 12, "#9C9890");
+  // 깎는 중인 석조 두상 (작업 좌대 위)
+  const bust = (x, y, v) => { addBlock(x, y, .9, .9); addObj(x, y, .9, .9, 50, () => {
+    box(x, y, .9, .9, 16, "#8A6A4A", "#6E5238", "#5A422C"); const [cx, cy] = iso(x + .45, y + .45, 16), S1 = "#E4E0D6", S2 = "#C8C4BA";
+    if (v) { px(cx - 7, cy - 18, 14, 18, OLC); px(cx - 6, cy - 17, 12, 17, S2); px(cx - 6, cy - 17, 12, 3, S1); for (let k = 0; k < 4; k++) px(cx - 5 + k * 3, cy - 12 + (k % 2) * 4, 2, 1, "#A8A49C"); } // 아직 덩어리
+    else { px(cx - 6, cy - 6, 13, 6, OLC); px(cx - 5, cy - 5, 11, 5, S2); disc(cx, cy - 13, 6, OLC); disc(cx, cy - 13, 5, S1); px(cx - 2, cy - 14, 1, 1, "#9A968E"); px(cx + 2, cy - 14, 1, 1, "#9A968E"); px(cx + 3, cy - 18, 3, 8, S2); } // 반쯤 깎은 두상
+  }); };
+  bust(x0 + 4.4, y0 + 4.2, 0); bust(x0 + 6.4, y0 + 3.4, 1); bust(x0 + 3.0, y0 + 6.6, 0);
+  // 작업대 + 정·망치 · 그라인더
+  addBlock(x0 + .2, y0 + 4.2, .9, 2.4); addObj(x0 + .2, y0 + 4.2, .9, 2.4, 22, () => { box(x0 + .2, y0 + 4.2, .9, 2.4, 12, "#B89870", "#9A7A54", "#7E6040");
+    const [a, b] = iso(x0 + .6, y0 + 4.9, 12); px(a - 1, b - 6, 2, 6, "#6A6E76"); px(a - 3, b - 8, 6, 2, "#8A6A4A"); const [c2, d2] = iso(x0 + .6, y0 + 5.8, 12); px(c2 - 4, d2 - 3, 7, 3, "#2E6AD0"); px(c2 + 3, d2 - 2, 4, 1, "#3A3A3A"); });
+  // 돌가루 포대
+  addBlock(x1 - 1.6, y1 - 1.6, 1.1, .8); addObj(x1 - 1.6, y1 - 1.6, 1.1, .8, 16, () => { box(x1 - 1.6, y1 - 1.6, 1.1, .8, 8, "#EDE6D2", "#D6CDB4", "#BEB498"); box(x1 - 1.5, y1 - 1.5, .9, .6, 5, "#F4EEDC", "#DDD4BC", "#C4BAA0", 8); });
+}
+function stoneRoof() { // 반투명 하얀 천막 지붕 (사람 위로, 마지막에 그려요)
+  const { x0, y0, x1, y1, H, R } = STONE, ym = (y0 + y1) / 2;
+  G.globalAlpha = .4;
+  poly([iso(x0, y0, H), iso(x1, y0, H), iso(x1, ym, R), iso(x0, ym, R)], "#FFFFFF");
+  poly([iso(x0, ym, R), iso(x1, ym, R), iso(x1, y1, H), iso(x0, y1, H)], "#ECECE6");
+  G.globalAlpha = 1;
+  outline([iso(x0, y0, H), iso(x1, y0, H), iso(x1, y1, H), iso(x0, y1, H)], "#B8B8B0"); line(...iso(x0, ym, R), ...iso(x1, ym, R), "#B8B8B0");
+  line(...iso(x0, y1, H), ...iso(x0, ym, R), "#B8B8B0"); line(...iso(x1, y1, H), ...iso(x1, ym, R), "#B8B8B0");
+  for (let u = x0 + .9; u < x1; u += .9) { const [a, b] = iso(u, y1, H); px(a - 1, b, 3, 2, "#F7F7F2"); } // 천 끝단
 }
 function hitStairs(wx, wy) { const { x, y, w, n, sd } = STAIRS, len = .8 + n * sd, [gx, gy] = toGrid(wx, wy, 20); return gx > x - .2 && gx < x + w + .2 && gy > y - .2 && gy < y + len + .4; }
 function streetLight(gx, gy) {
@@ -803,8 +842,8 @@ function sawhorses(gx, gy) {
     const [gx2, gy2] = iso(gx + 1.2, gy + .35, 12); px(gx2 - 3, gy2 - 3, 6, 3, "#2E6AD0"); px(gx2 + 3, gy2 - 2, 4, 1, "#3A3A3A"); // 그라인더
   });
 }
-function tarpOverlay() { // 파란 천막 — 폴리장과 함께 없앰 (쥬 요청)
-  return;
+function tarpOverlay() { // 파란 천막은 폴리장과 함께 없앰 → 지금은 석조실 하얀 천막 지붕
+  stoneRoof(); return;
   const z = 46, x0 = 17.6, y0 = 3, x1 = 24.4, y1 = 10.5;
   for (const [x, y] of [[x0, y0], [x1, y0], [x0, y1], [x1, y1]]) { const [a, b] = iso(x, y), [c, d] = iso(x, y, z); line(a, b, c, d, "#6A6A70"); }
   G.globalAlpha = .82; poly([iso(x0, y0, z + 4), iso(x1, y0, z + 4), iso(x1, y1, z), iso(x0, y1, z)], "#3A78D0"); G.globalAlpha = 1;
@@ -1000,6 +1039,7 @@ function buildWorld() {
   // 바깥: 폴리장은 없애고 빈 야외 공간 (찻길 가로등·버스 정류장만)
   streetLight(OUTX + .5, 3.6); streetLight(OUTX + .5, 16.2); streetLight(OUTX + .5, 25.4); busStop(NX - .85, 6.4);
   outdoorStairs(); // 뒤쪽(위층)으로 올라가는 계단
+  stoneRoom(); // 🪨 석조실 (하얀 천막)
   WORKS.forEach(workObj); extraProps(); // 친구들이 만든 작품 + 고량주·분리수거함
   if (!bg) { bg = document.createElement("canvas"); bg.width = WWID; bg.height = WHEI; const q = bg.getContext("2d"); const prev = G; G = q; drawRoom(); G = prev; }
   objs.forEach(bake);
