@@ -525,7 +525,7 @@ const INX = 16; // 이 선(gx=16)부터 바깥(폴리장)
 const DEPTS = [
   { name: "부산대 조소과", at: [5, .2, 74], color: "#6a5a4a" },
   { name: "라꾸라꾸 존", at: [1.6, 2.4, 36], color: "#4a6a9a" },
-  { name: "모여 앉는 곳", at: [8.6, 1.2, 40], color: "#8a8478" },
+  { name: "모여 앉는 곳", at: [7.2, 12.0, 30], color: "#c89a3a" },
   { name: "쥬 졸업작품", at: [10.1, 20.7, 46], color: "#5a5048" },
   { name: "이섬 졸업작품", at: [12.9, 21.3, 50], color: "#5b6fb0" },
   { name: "🪨 석조실", at: [INX + 2 + 4.5, 6.8, 62], color: "#7a7468" },
@@ -981,9 +981,9 @@ function roundStool(gx, gy, col, tag = null) {
   });
 }
 /* 평상 (노란 장판) */
-function pyeongsang(gx, gy, w, d) {
+function pyeongsang(gx, gy, w, d, tags = []) { // tags: 친구들 각자 자리 (평상 = 모여 앉는 곳)
   addBlock(gx, gy, w, d);
-  for (let i = 0; i < Math.floor(w); i++) for (const yy of [gy + .7, gy + d - .7]) SEATS.push({ x: gx + .5 + i, y: yy, h: 9 });
+  let ti = 0; for (let i = 0; i < Math.floor(w); i++) for (const yy of [gy + .7, gy + d - .7]) SEATS.push({ x: gx + .5 + i, y: yy, h: 9, tag: tags[ti++] || null });
   addObj(gx, gy, w, d, 30, () => {
     for (const [x, y] of [[.1, .1], [w - .25, .1], [.1, d - .25], [w - .25, d - .25], [w / 2, .1], [w / 2, d - .25]]) box(gx + x, gy + y, .15, .15, 7, "#9A6A3E", "#7A5030", "#5E3C22");
     box(gx, gy, w, d, 2, "#C8945A", "#A87440", "#8A5C30", 7);
@@ -1065,10 +1065,7 @@ function buildWorld() {
   // 왼쪽 벽: 개수대·선반·냉장고·정수기·락커
   sink(.05, 4.6); bucket(1.1, 5.0); bucket(1.1, 5.5, "#6F8FB0"); rack(.05, 6.6, .7, 2.8, 30); fridge(.05, 10.2); waterCooler(.15, 11.5); lockers(.05, 12.6);
   // ① 과실 안쪽: 친구들 모여 앉는 곳 (큰 창문 아래 긴 탁자 + 의자, 각자 자리) + 대걸레 빠는 개수대
-  lowTable(6.8, 1.7, 3.6, 1.1); lowTable(10.8, 1.7, 1.4, 1.1);
-  [[7.0, "s", "mungyu"], [8.2, "s", "ju"], [9.4, "s", "isum"], [10.9, "s", "hyerin"]].forEach(([x, b, tag], i) => plasticChair(x, .9, SC[i % SC.length], b, tag));
-  [[7.0, "n", "hyuna"], [8.2, "n", "najeong"], [9.4, "n", "jaewon"], [10.9, "n", null]].forEach(([x, b, tag], i) => plasticChair(x, 3.0, SC[(i + 2) % SC.length], b, tag));
-  mopSink(13.4, .05);
+  mopSink(8.0, .05, 4.6); // 큰 창문 아래: 대걸레 빠는 개수대 (모여 앉는 곳은 가운데 평상 — 쥬 요청)
   // ② 입구에서 양옆으로만 책상·선반 (오른쪽 벽 앞쪽)
   for (let y = 14.2; y < 23.6; y += 1) { counterSeg(15, y, 1, 1, [[pick(), 15.5, y + .45]]); roundStool(14.25, y + .3, SC[Math.floor(y) % SC.length]); }
   wallShelf(15.55, 14.2, .45, 9.4);
@@ -1077,7 +1074,7 @@ function buildWorld() {
   wallShelf(.05, 14.6, .45, 9);
   // 가운데: 노란 장판 평상 + 둘러앉는 플라스틱 의자
   boardStand(); // 📝 게시판
-  pyeongsang(4.6, 11.4, 5.2, 3.0); plasticChair(3.8, 12.4, RED, "e"); plasticChair(10.1, 12.6, BLUE, "w");
+  pyeongsang(4.6, 11.4, 5.2, 3.0, ["mungyu", "ju", "isum", "hyerin", "hyuna", "najeong", "jaewon"]); plasticChair(3.8, 12.4, RED, "e"); plasticChair(10.1, 12.6, BLUE, "w"); // 🟨 모여 앉는 곳
   // 석고 포대 (소조 코너는 쥬 요청으로 없앴어요)
   plasterBags(12.8, 4.4); bucket(12.3, 5.6); bucket(14.3, 5.4, "#E8E4DA");
   // 이젤 (가운데 작품 좌대는 쥬 요청으로 없앴어요) + 구석에 쌓인 작품들
@@ -1224,13 +1221,13 @@ function tvStand(gx, gy) {
     box(gx + 1.8, gy + .15, .2, .3, 6, "#E8E8E8", "#C8C8C8", "#ACACAC", 8);
   });
 }
-function mopSink(gx, gy) { // 대걸레 빠는 개수대 (낮고 깊은 시멘트 통 + 수도꼭지 + 대걸레 + 양동이)
-  const w = 2.0, d = .9; addBlock(gx, gy, w, d);
+function mopSink(gx, gy, w = 2.0) { // 대걸레 빠는 개수대 (낮고 깊은 시멘트 통 + 수도꼭지 + 대걸레 + 양동이)
+  const d = .9; addBlock(gx, gy, w, d);
   addObj(gx, gy, w, d, 60, () => {
     box(gx, gy, w, d, 9, "#B8B4AA", "#A09C92", "#8A867C"); topQuad(gx + .12, gy + .12, gx + w - .12, gy + d - .12, 9, "#6F8A98"); // 물 고인 통
     G.globalAlpha = .5; topQuad(gx + .3, gy + .25, gx + .9, gy + .5, 9, "#A8C8D8"); G.globalAlpha = 1;
-    const [fx, fy] = iso(gx + w / 2, gy + .08, 26); px(fx - 1, fy, 2, 8, "#9AA0A8"); px(fx - 1, fy, 6, 2, "#9AA0A8"); px(fx + 4, fy + 2, 2, 3, "#C8CCD2"); // 수도꼭지
-    const [mx, my] = iso(gx + w - .25, gy + .2, 9); line(mx, my, mx + 4, my - 34, "#C89A5A"); px(mx - 3, my - 2, 7, 4, "#E8E4D6"); px(mx - 2, my + 1, 5, 2, "#C8C4B6"); // 대걸레 기대 놓음
+    for (let u = .9; u < w - .3; u += 1.5) { const [fx, fy] = iso(gx + u, gy + .08, 26); px(fx - 1, fy, 2, 8, "#9AA0A8"); px(fx - 1, fy, 6, 2, "#9AA0A8"); px(fx + 4, fy + 2, 2, 3, "#C8CCD2"); } // 수도꼭지 여러 개
+    for (const u of w > 3 ? [w - .25, 1.6] : [w - .25]) { const [mx, my] = iso(gx + u, gy + .2, 9); line(mx, my, mx + 4, my - 34, "#C89A5A"); px(mx - 3, my - 2, 7, 4, "#E8E4D6"); px(mx - 2, my + 1, 5, 2, "#C8C4B6"); } // 대걸레 기대 놓음
   });
   bucket(gx - .6, gy + .3, "#E0577F");
 }
@@ -1893,7 +1890,7 @@ function goDump() {
 }
 
 /* 🍶 고량주: 작업대 위. 마시면 취해요 (1~4단계, 1분마다 깨요) */
-const BOTTLES = [{ x: 8.0, y: 2.1, fx: 8.0, fy: 4.4 }, { x: 11.4, y: 2.0, fx: 11.5, fy: 4.4 }, { x: 15.45, y: 16.5, fx: 13.7, fy: 16.6 }, { x: 15.5, y: 19.6, fx: 13.7, fy: 19.6 }, { x: .55, y: 18.5, fx: 2.2, fy: 18.6 }]; // 고량주: 모여 앉는 탁자 위 + 양옆 책상
+const BOTTLES = [{ x: 6.4, y: 12.9, fx: 6.4, fy: 10.8 }, { x: 8.8, y: 12.8, fx: 8.8, fy: 10.8 }, { x: 15.45, y: 16.5, fx: 13.7, fy: 16.6 }, { x: 15.5, y: 19.6, fx: 13.7, fy: 19.6 }, { x: .55, y: 18.5, fx: 2.2, fy: 18.6 }]; // 고량주: 모여 앉는 탁자 위 + 양옆 책상
 function extraProps() {
   wasteYard();
   for (const b of BOTTLES) addObj(b.x - .1, b.y - .1, .2, .2, 30, () => {
