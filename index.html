@@ -528,10 +528,10 @@ const DEPTS = [
   { name: "모여 앉는 곳", at: [7.2, 12.0, 30], color: "#c89a3a" },
   { name: "쥬 졸업작품", at: [10.1, 20.7, 46], color: "#5a5048" },
   { name: "이섬 졸업작품", at: [12.9, 21.3, 50], color: "#5b6fb0" },
-  { name: "🪨 석조실", at: [INX + 2 + 4.5, 6.8, 62], color: "#7a7468" },
+  { name: "🪨 석조실", at: [INX + 3.3 + 4.5, 6.8, 62], color: "#7a7468" },
   { name: "과실 문", at: [13.6, 26.2, 48], color: "#8a6a4a" },
   { name: "복도", at: [6, 27.6, 30], color: "#8a8478" },
-  { name: "🌸 등나무 쉼터", at: [8, 37.2, 66], color: "#8a5ab0" },
+  { name: "🌸 등나무 쉼터", at: [8.25, 35.9, 66], color: "#8a5ab0" },
   { name: "부산대 앞 찻길", at: [OUTX + 3.6, 1.0, 40], color: "#4a4c58" },
 ];
 /* 🚗 야외 오른쪽 찻길: 인도(N~N+1.2) · 2차선 도로 · 건너편 인도 · 횡단보도(앞마당 앞) */
@@ -567,7 +567,7 @@ function outdoorStairs() {
   });
 }
 /* 🪨 석조실: 과실 옆(사람 다닐 길 1.7칸 띄움)에 하얀 천막. 뒤·과실 쪽은 흰 천 벽, 앞·오른쪽은 열려 있어요 */
-const STONE = { x0: INX + .3 + 1.7, y0: 6.6, x1: INX + .3 + 1.7 + 9, y1: 16.8, H: 44, R: 54 };
+const STONE = { x0: INX + .3 + 3.0, y0: 6.6, x1: INX + .3 + 3.0 + 9, /* 과실 벽돌벽과 석조실 사이 길 넓게 (쥬 요청) */ y1: 16.8, H: 44, R: 54 };
 function stoneRoom() {
   const { x0, y0, x1, y1, H } = STONE, W = x1 - x0, D = y1 - y0, CV = ["#F7F7F2", "#E6E6DE", "#D2D2CA"];
   // 바닥 (돌가루 뽀얀 시멘트)
@@ -642,7 +642,7 @@ function pollyYard() {
   plant(X + 18.6, 12.0, 1.4); plant(X + 18.6, 18.0, 1.3); plant(X + 18.2, 24.0, 1.5); frp(X + 13.0, 22.6); frp(X + 12.0, 9.6); drum(X + 6.2, 25.4, "#E8B83A"); drum(X + 15.4, 15.2, "#2F68C8");
 }
 /* 🌸 앞마당 등나무 쉼터: 나무 기둥 + 등나무 지붕(보라 꽃 주렁주렁) + 아래 마주 보는 벤치 */
-const WIST = { x0: 4, y0: 37, x1: 12.5, y1: 43, H: 50 };
+const WIST = { x0: 5.25, y0: 35.75, x1: 11.25, y1: 44.25, H: 50 }; // 쉼터를 벤치 방향(세로 줄)에 맞춰 돌렸어요
 const DARKWOOD = ["#6B4A2E", "#563A22", "#432C18"]; // 진한 우드색 (벤치·테이블)
 function bench(gx, gy, len) { // 진한 나무 벤치 (y 방향으로 길게), 눌러서 앉아요
   const w = .55; addBlock(gx, gy, w, len);
@@ -663,24 +663,24 @@ function woodTable(gx, gy, w, len) { // 진한 나무 테이블
 }
 function wisteriaYard() {
   const { x0, y0, x1, y1, H } = WIST;
-  for (const [px2, py2] of [[x0, y0], [x1 - .25, y0], [x0, y1 - .25], [x1 - .25, y1 - .25], [(x0 + x1) / 2, y0], [(x0 + x1) / 2, y1 - .25]]) {
+  for (const [px2, py2] of [[x0, y0], [x1 - .25, y0], [x0, y1 - .25], [x1 - .25, y1 - .25], [x0, (y0 + y1) / 2], [x1 - .25, (y0 + y1) / 2]]) {
     addBlock(px2, py2, .25, .25); addObj(px2, py2, .25, .25, H + 4, () => { box(px2, py2, .25, .25, H, "#9A7450", "#7E5C3C", "#664A30"); line(...iso(px2 + .12, py2 + .25, 4), ...iso(px2 + .18, py2 + .25, H - 4), "#5E8A3A"); }); // 기둥 + 감고 올라가는 덩굴
   }
   // 지붕 아래: 二자로 마주 보는 벤치 2개 + 가운데 나무 테이블 (진한 우드)
-  const cx = (x0 + x1) / 2, ly0 = y0 + .8, L = y1 - y0 - 1.6;
+  const cx = (x0 + x1) / 2, L = 4.4, ly0 = (y0 + y1) / 2 - L / 2; // 벤치·테이블 크기는 그대로
   bench(cx - 1.75, ly0, L); woodTable(cx - .7, ly0 + .1, 1.4, L - .2); bench(cx + 1.2, ly0, L);
 }
 function wisteriaRoof() { // 사람 위로 그려요 (살짝 비치게)
   const { x0, y0, x1, y1, H } = WIST; let sd = 4242; const r = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
-  for (const y of [y0 + .1, y1 - .15]) box(x0 - .1, y, x1 - x0 + .2, .12, 2, "#9A7450", "#7E5C3C", "#664A30", H); // 들보
-  for (let x = x0 + .2; x < x1; x += .6) box(x, y0 - .2, .08, y1 - y0 + .4, 1, "#A88460", "#8A6A48", "#705234", H + 2); // 서까래
+  for (const x of [x0 + .1, x1 - .15]) box(x, y0 - .1, .12, y1 - y0 + .2, 2, "#9A7450", "#7E5C3C", "#664A30", H); // 들보 (긴 쪽)
+  for (let y = y0 + .2; y < y1; y += .6) box(x0 - .2, y, x1 - x0 + .4, .08, 1, "#A88460", "#8A6A48", "#705234", H + 2); // 서까래
   G.globalAlpha = .82;
   for (let k = 0; k < 150; k++) { const [a, b] = iso(x0 + r() * (x1 - x0), y0 + r() * (y1 - y0), H + 3 + r() * 3); disc(a, b, 2 + Math.floor(r() * 3), r() < .5 ? "#5E9A40" : "#77B054"); } // 잎
   for (let k = 0; k < 60; k++) { const [a, b] = iso(x0 + .2 + r() * (x1 - x0 - .4), y0 + .2 + r() * (y1 - y0 - .4), H + 2), len = 6 + Math.floor(r() * 10), c1 = r() < .5 ? "#B48ADC" : "#9A6ACC"; // 보라 꽃송이 주렁주렁
     for (let j = 0; j < len; j++) px(a - (j < len - 3 ? 1 : 0), b + j, j < len - 3 ? 3 : 1, 1, j % 3 === 0 ? "#D8C0F0" : c1); }
   G.globalAlpha = 1;
 }
-function hitStairs(wx, wy) { const { x, y, w, n, sd } = STAIRS, len = .8 + n * sd, [gx, gy] = toGrid(wx, wy, 20); return gx > x - .2 && gx < x + w + .2 && gy > y - .2 && gy < y + len + .4; }
+function hitStairs(wx, wy) { const { x, y, w, n, sd } = STAIRS, len = .8 + n * sd, [gx, gy] = toGrid(wx, wy, 0); return gx > x && gx < x + w && gy > y && gy < y + len; } // 계단 발판을 딱 눌렀을 때만 (옆 길 누르면 그냥 걸어가요)
 function streetLight(gx, gy) {
   addBlock(gx, gy, .2, .2);
   addObj(gx, gy, .2, .2, 78, () => {
