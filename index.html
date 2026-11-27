@@ -2842,16 +2842,40 @@ const vehHides = vid => !!(VEH[vid] && VEH[vid].hide);
 function updCarBtn() { const b = $("carBtn"); if (b) b.hidden = !(me.cs >= 0); }
 { const sp = setPose; setPose = p => { if (me.cs >= 0) return; sp(p); }; } // 차 안에서는 자세 그대로
 /* 🚬 담배 피기: 누구나, 어디서나 (자세 메뉴 / 0번 키). 걸으면 끝나요 */
-{ const sp = setPose; setPose = p => { sp(p); if (p === "smoke" && myChar) bubble(myChar, ["후~ 🚬", "한 대만… 🚬", "담타 🚬💨"][Math.floor(Math.random() * 3)]); }; }
+{ const sp = setPose; setPose = p => { if (p === "smokeAll") { smokeAll(); return; } sp(p); if (p === "smoke" && myChar) bubble(myChar, ["후~ 🚬", "한 대만… 🚬", "담타 🚬💨"][Math.floor(Math.random() * 3)]); }; }
+/* 🚬 다같이 담배피기: 누르면 접속한 친구들 + 접속 안 한 캐릭터들까지 다 같이 (data/events 로 알려요) */
+const pageStart = Date.now();
+function smokeEveryone(by) {
+  if (myChar && !(me.cs >= 0)) setPose("smoke");
+  const now = performance.now();
+  for (const [id, c] of Object.entries(CHARS)) { if (!c.seat) continue; const n = npcOf(id); npcLeaveSeat(n); n.path = []; n.pose = "smoke"; n.until = now + 15000; }
+  if (by && myChar) setTimeout(() => bubble(myChar, "다같이 담타~ 🚬💨"), 400);
+}
+function smokeAll() {
+  if (db) db.collection("events").add({ type: "smokeAll", t: Date.now(), by: myId || null }).catch(() => {});
+  smokeEveryone(true);
+}
+function startEvents() {
+  if (!db) { if (window.claude) setTimeout(startEvents, 1500); return; } let seen = null;
+  db.collection("events").orderBy("t", "desc").limit(1).onSnapshot(s => {
+    const d = s.docs[0]; if (!d) return; const v = d.data();
+    if (seen === null) { seen = d.id; if (v && Date.now() - v.t < 15000 && v.t > pageStart - 15000 && v.by !== myId) smokeEveryone(false); return; }
+    if (d.id === seen) return; seen = d.id;
+    if (v && v.type === "smokeAll" && v.by !== myId && Date.now() - v.t < 30000) { smokeEveryone(false); if (myChar) bubble(myChar, "오 담타? 🚬"); }
+  }, () => {});
+}
+setTimeout(() => startEvents(), 1500);
 addEventListener("keydown", e => { if (e.key === "0" && myChar && !/INPUT|TEXTAREA/.test(e.target.tagName) && !blockedUI()) setPose("smoke"); });
 { const orig = drawActor; drawActor = (a, fr, x, y) => {
   orig(a, fr, x, y);
   if (a.pose !== "smoke" || a.inCar) return;
-  const h = sprH(CHARS[a.c].sheet) || 36, dir = a.flip ? 1 : -1; // 그림은 왼쪽을 봐요 (flip이면 오른쪽)
-  const cx = Math.round(x + dir * 5), cy = Math.round(y - h * .52);
-  g.fillStyle = "#F4F4F0"; g.fillRect(dir > 0 ? cx : cx - 4, cy, 5, 1); g.fillStyle = "#FF7A2A"; g.fillRect(dir > 0 ? cx + 5 : cx - 5, cy, 1, 1); // 담배 + 불씨
+  const h = sprH(CHARS[a.c].sheet) || 36, dir = a.flip ? -1 : 1; // 그림은 왼쪽을 보고, flip이 아니면 뒤집어서 오른쪽을 봐요
+  const mx = Math.round(x + dir), my = Math.round(y - h * .64); // 입 (얼굴 아래쪽 가운데)
+  g.fillStyle = "#F4F4F0"; for (let k = 0; k < 5; k++) g.fillRect(mx + dir * k, my + (k > 2 ? 1 : 0), 1, 1); // 입에 문 담배 (살짝 아래로)
+  g.fillStyle = "#C89A5A"; g.fillRect(mx, my, 1, 1); // 필터
+  const tx = mx + dir * 5, ty = my + 1; g.fillStyle = "#FF7A2A"; g.fillRect(tx, ty, 1, 1); // 불씨
   const t = performance.now() / 900;
-  for (let k = 0; k < 3; k++) { const ph = (t + k / 3) % 1, sx = Math.round((dir > 0 ? cx + 6 : cx - 6) + Math.sin((t + k) * 3) * 2 + dir * ph * 3), sy = Math.round(cy - 2 - ph * 16); g.globalAlpha = .6 * (1 - ph); g.fillStyle = "#D8D8DC"; g.fillRect(sx - 1, sy - 1, 2 + Math.round(ph * 3), 2 + Math.round(ph * 2)); } // 연기 모락모락
+  for (let k = 0; k < 3; k++) { const ph = (t + k / 3) % 1, sx = Math.round(tx + Math.sin((t + k) * 3) * 2 + dir * ph * 3), sy = Math.round(ty - 2 - ph * 16); g.globalAlpha = .6 * (1 - ph); g.fillStyle = "#D8D8DC"; g.fillRect(sx - 1, sy - 1, 2 + Math.round(ph * 3), 2 + Math.round(ph * 2)); } // 연기 모락모락
   g.globalAlpha = 1;
 }; }
 /* ✋ 작품 옮기기: 내 작품을 꾹 눌러 끌어다 놓기 (만든 사람만) */
@@ -3084,7 +3108,7 @@ function draw(now) {
 
 /* ---------- 화면 버튼 ---------- */
 {
-  const POSES = [["stand", "🧍 서기", "1"], ["sit", "🪑 앉기", "2"], ["squat", "🙇 쪼그려 앉기", "3"], ["plank", "💪 엎드려 뻗쳐", "4"], ["lie", "😴 엎드려 눕기", "5"], ["floor", "🧘 바닥에 앉기", "6"], ["smoke", "🚬 담배 피기", "0"]];
+  const POSES = [["stand", "🧍 서기", "1"], ["sit", "🪑 앉기", "2"], ["squat", "🙇 쪼그려 앉기", "3"], ["plank", "💪 엎드려 뻗쳐", "4"], ["lie", "😴 엎드려 눕기", "5"], ["floor", "🧘 바닥에 앉기", "6"], ["smoke", "🚬 담배 피기", "0"], ["smokeAll", "🚬 다같이 담배피기", "-"]];
   const m = $("poseMenu");
   for (const [p, label, key] of POSES) { const b = document.createElement("button"); b.type = "button"; b.textContent = `${label}  (${key})`; b.onclick = () => { setPose(p); m.hidden = true; }; m.appendChild(b); }
   $("poseBtn").onclick = () => { m.hidden = !m.hidden; $("poseBtn").setAttribute("aria-expanded", String(!m.hidden)); };
