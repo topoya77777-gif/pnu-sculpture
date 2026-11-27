@@ -178,9 +178,7 @@ button { touch-action: manipulation; }
       <button class="hud-btn" type="button" id="chatToggle" aria-expanded="true" aria-controls="chat">💬 채팅</button>
     </div>
     <div class="menu" id="poseMenu" hidden></div>
-    <button type="button" id="jumpBtn" class="jump-btn" aria-label="점프">🦘</button>
     <button type="button" id="carBtn" class="car-btn" hidden>🚗 내리기</button>
-    <button type="button" id="cleanBtn" class="jump-btn clean-btn" aria-label="청소 모드" aria-pressed="false">🧹</button>
     <div class="menu" id="outfitMenu" hidden aria-label="옷 갈아입기"></div>
     <div class="menu work-menu" id="workMenu" hidden><div id="workInfo" class="work-info"></div><button type="button" id="workLike" class="work-like" aria-pressed="false">🤍 좋아요 0</button><div id="workCmts" class="work-cmts"></div><form id="workCmtForm" class="work-cmt-form"><input id="workCmtIn" maxlength="80" autocomplete="off" placeholder="댓글 달기"><button type="submit">등록</button></form><button type="button" id="workDel">🔨 내 작품 치우기</button><button type="button" id="workClose">닫기</button></div>
     <div class="help" id="help">방향키·바닥 클릭 걷기 · 의자·평상 누르면 앉기 · 락커 누르면 옷 갈아입기 · 1~4 자세 · Enter 채팅</div>
@@ -1410,7 +1408,7 @@ async function removeWork() {
   $("workDel").onclick = () => removeWork();
   $("workClose").onclick = () => { $("workMenu").hidden = true; menuWork = null; };
   $("workLike").onclick = () => toggleLike();
-  $("jumpBtn").onclick = e => { e.stopPropagation(); doJump(); };
+
   $("workCmtForm").onsubmit = sendCmt;
 }
 
@@ -1958,7 +1956,7 @@ function goDump() {
 }
 function updBag() { bagEl.hidden = !carried; bagEl.textContent = carried >= BAG_MAX ? `🗑️ 봉투 꽉 참! 입구 옆 초록 분리수거함을 눌러서 버려줘` : `🗑️ 봉투 ${carried}/${BAG_MAX} · 다 모으면 입구 옆 초록 분리수거함에 버려`; }
 /* 처음 들어오면 한 번 알려줘요 */
-setTimeout(function hint() { if (!myChar) { setTimeout(hint, 3000); return; } try { if (localStorage.getItem("mc-trash-hint")) return; localStorage.setItem("mc-trash-hint", "1"); } catch {} bubble(myChar, "청소하고 싶으면 오른쪽 아래 🧹 버튼 눌러봐!"); }, 6000);
+setTimeout(function hint() { if (!myChar) { setTimeout(hint, 3000); return; } try { if (localStorage.getItem("mc-trash-hint")) return; localStorage.setItem("mc-trash-hint", "1"); } catch {} bubble(myChar, "바닥 쓰레기나 흰 석고 자국을 딱 누르면 치울 수 있어 🧹"); }, 6000);
 /* ---------- 🛒 포인트 상점 + 🏆 순위 (재료 대신 꾸미기·칭호·간식) ---------- */
 const SHOP = [
   { id: "sprout", kind: "acc", name: "🌱 새싹", price: 5 }, { id: "heart", kind: "acc", name: "💗 하트", price: 10 }, { id: "star", kind: "acc", name: "⭐ 별", price: 15 },
@@ -2445,18 +2443,11 @@ setTimeout(() => {
   $("eyeClose").onclick = () => $("eyeDlg").close();
 }, 0);
 
-/* ---------- 🧹 청소 모드: 쓰레기 줍기·석고 긁기는 하고 싶을 때만 (쥬 요청) ----------
-   꺼져 있으면 바닥을 눌러도 그냥 걸어가요. 켜면 쓰레기·석고 자국을 눌러서 치우고 포인트를 받아요. */
-let cleanMode = (() => { try { return localStorage.getItem("mc-clean") === "1"; } catch { return false; } })();
-{ const ht = hitTrash; hitTrash = (...a) => cleanMode ? ht(...a) : null; }
-{ const hs = hitStain; hitStain = (...a) => cleanMode ? hs(...a) : null; }
-{ const hd = hitDump; hitDump = (...a) => (cleanMode || carried > 0) && hd(...a); } // 입구 옆 분리수거함: 청소할 때만 눌려요
-function setCleanMode(on) {
-  cleanMode = on; try { localStorage.setItem("mc-clean", on ? "1" : "0"); } catch {}
-  const b = $("cleanBtn"); b.setAttribute("aria-pressed", String(on)); b.title = on ? "청소 모드 끄기" : "청소 모드 켜기";
-  if (myChar) bubble(myChar, on ? "🧹 청소 모드 ON! 쓰레기랑 석고 자국 눌러서 치우자" : "청소 모드 OFF. 이제 그냥 돌아다닐래");
-}
-setTimeout(() => { $("cleanBtn").onclick = e => { e.stopPropagation(); setCleanMode(!cleanMode); }; $("cleanBtn").setAttribute("aria-pressed", String(cleanMode)); }, 0);
+/* ---------- 🧹 쓰레기·석고 자국은 "딱 그걸" 눌렀을 때만 치워요 (쥬 요청) ----------
+   옆 바닥을 누르면 그냥 걸어가요. 버튼 없이 바로 눌러서 치우기. */
+hitTrash = (wx, wy) => { if (!TRASH) return null; let best = null, bd = 6; for (const t of TRASH) { if (trashGone(t.id)) continue; const [x, y] = iso(t.x, t.y), d = Math.hypot(wx - x, (wy - y + 2) * 1.4); if (d < bd) { bd = d; best = t; } } return best; };
+hitStain = (wx, wy) => { let best = null, bd = 1; for (const p of allStains()) { if (scrapedNow(p.id)) continue; const [x, y] = iso(p.x, p.y), e = Math.hypot((wx - x) / (p.rad * 16 + 2), (wy - y) / (p.rad * 8 + 2)); if (e < bd) { bd = e; best = p; } } return best; };
+{ const hd = hitDump; hitDump = (wx, wy) => { const [cx, cy] = iso(DUMP.x + DUMP.w / 2, DUMP.y + DUMP.d / 2, 10); return carried > 0 ? hd(wx, wy) : Math.abs(wx - cx) < 14 && Math.abs(wy - cy) < 12; }; } // 분리수거함도 딱 눌러야
 
 /* ---------- 🚗 나정카: 5명까지 타요 (0번 = 운전석, 운전석에 탄 사람이 운전) ----------
    운전자: 방향키 또는 가고 싶은 곳 누르기. 차를 다시 누르거나 "내리기" 버튼으로 내려요.
