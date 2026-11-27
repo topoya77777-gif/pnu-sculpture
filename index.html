@@ -709,6 +709,20 @@ function wisteriaYard() {
   });
 }
 let BELL_TABLE = null;
+/* 🚬 흡연 구역 재떨이 쓰레기통 (스텐 원통 + 위에 모래 재떨이, 꽁초) — 누르면 거기 가서 한 대 */
+const ASHTRAY_C = [10.65, 45.66];
+function ashtrayBin() {
+  const [cx, cy] = ASHTRAY_C, x = cx - .2, y = cy - .2, w = .4; addBlock(x, y, w, w);
+  addObj(x, y, w, w, 26, () => {
+    box(x, y, w, w, 20, "#C8CCD2", "#9AA0A8", "#7A8088"); // 스텐 몸통
+    for (const z of [6, 14]) line(...iso(x, y + w, z), ...iso(x + w, y + w, z), "#B0B6BE"); // 테두리 줄
+    const [ox, oy] = iso(x + .1, y + w, 9); px(ox, oy - 2, 4, 3, "#3A3E44"); // 쓰레기 넣는 구멍
+    box(x - .04, y - .04, w + .08, w + .08, 2, "#8A9098", "#6E747C", "#5A6068", 20); // 위 재떨이 판
+    topQuad(x + .04, y + .04, x + w - .04, y + w - .04, 22, "#D8CCA8"); // 모래
+    for (const [u, v] of [[.12, .15], [.25, .22], [.18, .3], [.3, .12]]) { const [bx, by] = iso(x + u, y + v, 22); px(bx, by, 2, 1, "#F4F0E6"); px(bx + 2, by, 1, 1, "#C89A5A"); } // 꽁초
+  });
+}
+function hitAshtray(wx, wy) { const [x, y] = iso(ASHTRAY_C[0], ASHTRAY_C[1], 12); return Math.abs(wx - x) < 9 && Math.abs(wy - y) < 14; }
 function wisteriaRoof() { // 사람 위로 그려요 (살짝 비치게)
   const { x0, y0, x1, y1, H } = WIST; let sd = 4242; const r = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
   for (const x of [x0 + .1, x1 - .15]) box(x, y0 - .1, .12, y1 - y0 + .2, 2, "#9A7450", "#7E5C3C", "#664A30", H); // 들보 (긴 쪽)
@@ -1197,6 +1211,7 @@ function buildWorld() {
   streetLight(OUTX + .5, 3.6); streetLight(OUTX + .5, 16.2); streetLight(OUTX + .5, 25.4); busStop(NX - .85, 6.4);
   outdoorStairs(); // 뒤쪽(위층)으로 올라가는 계단
   wisteriaYard(); // 🌸 앞마당 등나무 쉼터 + 벤치
+  ashtrayBin(); // 🚬 흡연 구역 재떨이 쓰레기통
   stoneRoom(); // 🪨 석조실 (하얀 천막)
   polyStation(); // 🟡 석조실 아래 야외: 폴리 작품 사포질 (누르면 사포 게임)
   WORKS.forEach(workObj); extraProps(); // 친구들이 만든 작품 + 고량주·분리수거함
@@ -3142,8 +3157,8 @@ const MOUTH = { ju: [-2.9, 17.5], isum: [-2.5, 20.4], sua: [-2.1, 33.3], hyerin:
 { const sp = setPose; setPose = p => { if (p === "smokeAll") { smokeAll(); return; } sp(p); if (p === "smoke" && myChar) bubble(myChar, ["후~ 🚬", "한 대만… 🚬", "담타 🚬💨"][Math.floor(Math.random() * 3)]); }; }
 /* 🚬 다같이 담배피기: 누르면 접속한 친구들 + 접속 안 한 캐릭터들까지 다 같이 (data/events 로 알려요) */
 const pageStart = Date.now();
-const SMOKE_C = [WIST.x0 + (WIST.x1 - WIST.x0) / 2, WIST.y0 - 1.7]; // 🚬 흡연 구역: 등나무 쉼터 앞에 다같이 동그랗게
-const smokeSpot = id => { const ids = Object.keys(CHARS), i = Math.max(0, ids.indexOf(id)), a = Math.PI * 2 * i / ids.length; return [SMOKE_C[0] + Math.cos(a) * 1.3, SMOKE_C[1] + Math.sin(a) * 1.0]; };
+const SMOKE_C = ASHTRAY_C; // 🚬 흡연 구역: 등나무 아래쪽 재떨이 쓰레기통 둘레에 다같이 동그랗게 (쥬가 서 있던 자리)
+const smokeSpot = id => { const ids = Object.keys(CHARS), i = Math.max(0, ids.indexOf(id)), a = Math.PI * 2 * i / ids.length; return [SMOKE_C[0] + Math.cos(a) * 2.0, SMOKE_C[1] + Math.sin(a) * 2.0]; };
 function smokeEveryone(by) {
   if (myChar && !(me.cs >= 0)) { const [sx, sy] = smokeSpot(myChar); walkThen(sx, sy, () => { me.flip = me.x - me.y > SMOKE_C[0] - SMOKE_C[1]; setPose("smoke"); }); }
   for (const [id, c] of Object.entries(CHARS)) { if (!c.seat) continue; const n = npcOf(id); npcLeaveSeat(n); const [sx, sy] = smokeSpot(id); n.path = findPath(sx, sy, n.x, n.y); n.goSeat = false; n.until = Infinity; if (n.path.length) n.goSmoke = true; else { n.pose = "smoke"; n.until = performance.now() + 25000; } }
@@ -3239,6 +3254,7 @@ cv.addEventListener("pointerdown", e => { // 차 관련 누르기를 먼저 처�
   { const r = hitStoneRock(wx, wy); if (r) { e.stopImmediatePropagation(); goCarveStone(r); return; } } // 🪨 석조실 돌 깎기
   if (!(me.cs >= 0) && hitBellTable(wx, wy)) { e.stopImmediatePropagation(); goBell(); return; } // 🔔 등나무 테이블 = 종치기
   if (!(me.cs >= 0) && hitMop(wx, wy)) { e.stopImmediatePropagation(); goMop(); return; } // 🪣 개수대 = 대걸레 빨기
+  if (!(me.cs >= 0) && hitAshtray(wx, wy)) { e.stopImmediatePropagation(); const [sx, sy] = smokeSpot(myChar); walkThen(sx, sy, () => { me.flip = me.x - me.y > SMOKE_C[0] - SMOKE_C[1]; setPose("smoke"); }); return; } // 🚬 재떨이 누르면 가서 한 대
   if (!(me.cs >= 0) && hitMyPet(wx, wy)) { e.stopImmediatePropagation(); petMeow(); return; } // 🐾 냥이 쓰다듬기
   if (!(me.cs >= 0) && hitPoly(wx, wy)) { e.stopImmediatePropagation(); goPoly(); return; } // 🟡 폴리 작업대 = 사포질
   if (hitStairs(wx, wy)) { e.stopImmediatePropagation(); const { x, y, w } = STAIRS, [gx] = toGrid(wx, wy, 0); goTo(Math.min(x + w - .4, Math.max(x + .4, gx)), y + .4); } // 🪜 계단 누르면 꼭대기까지 올라가요
