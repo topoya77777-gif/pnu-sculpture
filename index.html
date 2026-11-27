@@ -111,6 +111,7 @@ dialog p { margin: 0 0 14px; color: var(--muted); font-size: .88rem; }
 .menu [hidden] { display: none !important; }
 .jump-btn { position: absolute; right: 12px; bottom: 12px; z-index: 20; width: 52px; height: 52px; border: 0; border-radius: 50%; background: var(--panel); box-shadow: 0 4px 14px rgba(0,0,0,.2); font-size: 1.6rem; cursor: pointer; touch-action: manipulation; }
 .jump-btn:active { transform: scale(.9); }
+.clean-btn { bottom: 74px; opacity: .6; } .clean-btn[aria-pressed="true"] { opacity: 1; background: #FFE66A; box-shadow: 0 0 0 3px #e0577f, 0 4px 14px rgba(0,0,0,.2); }
 .eye-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 6px; max-height: 55vh; overflow-y: auto; padding: 2px; }
 .eye-opt { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px !important; border: 2px solid transparent !important; border-radius: 12px !important; background: var(--bg) !important; color: var(--fg) !important; font-size: .7rem !important; min-height: 58px; cursor: pointer; }
 .eye-opt img { width: 60px; height: auto; image-rendering: auto; }
@@ -176,6 +177,7 @@ button { touch-action: manipulation; }
     </div>
     <div class="menu" id="poseMenu" hidden></div>
     <button type="button" id="jumpBtn" class="jump-btn" aria-label="점프">🦘</button>
+    <button type="button" id="cleanBtn" class="jump-btn clean-btn" aria-label="청소 모드" aria-pressed="false">🧹</button>
     <div class="menu" id="outfitMenu" hidden aria-label="옷 갈아입기"></div>
     <div class="menu work-menu" id="workMenu" hidden><div id="workInfo" class="work-info"></div><button type="button" id="workLike" class="work-like" aria-pressed="false">🤍 좋아요 0</button><div id="workCmts" class="work-cmts"></div><form id="workCmtForm" class="work-cmt-form"><input id="workCmtIn" maxlength="80" autocomplete="off" placeholder="댓글 달기"><button type="submit">등록</button></form><button type="button" id="workDel">🔨 내 작품 치우기</button><button type="button" id="workClose">닫기</button></div>
     <div class="help" id="help">방향키·바닥 클릭 걷기 · 의자·평상 누르면 앉기 · 락커 누르면 옷 갈아입기 · 1~4 자세 · Enter 채팅</div>
@@ -261,7 +263,7 @@ function avShade(hex, f) {
 const app = $("app"), cv = $("world"), g0 = cv.getContext("2d");
 const lo = document.createElement("canvas"), g = lo.getContext("2d");
 let G = g, S = 2, buildings = [], near = null, hover = null, objs = [], blocks = [], bg = null, SEATS = [], seatTag = null;
-const N = 26, OX = N * 16 + 16, OY = 88, WWID = N * 32 + 32, WHEI = OY + N * 16 + 30, OLC = "#3a2418", PLAT = { x: -9, y: -9, w: 0, d: 0, h: 0 };
+const N = 26, NX = 33, OX = N * 16 + 16, OY = 88, WWID = (N + NX) * 16 + 32, WHEI = OY + (N + NX) * 8 + 30, /* NX: 폴리장 오른쪽 찻길까지 (가로만 넓어요) */ OLC = "#3a2418", PLAT = { x: -9, y: -9, w: 0, d: 0, h: 0 };
 const START = [7.6, 24.4];
 const me = { x: START[0], y: START[1], flip: false, back: true, step: 0, path: [], pose: "stand", seat: null, wantSeat: null };
 const lz = { x: START[0] + .7, y: START[1] + .6, t: 0, say: "", sayUntil: 0, flip: false };
@@ -498,7 +500,52 @@ const DEPTS = [
   { name: "쥬 졸업작품", at: [11.2, 21.0, 46], color: "#5a5048" },
   { name: "폴리장 (야외)", at: [21, 1.2, 46], color: "#2f6fb0" },
   { name: "폐기물 처리장", at: [22.6, 10.0, 40], color: "#4e7a34" },
+  { name: "부산대 앞 찻길", at: [29.6, 1.0, 40], color: "#4a4c58" },
 ];
+/* 🚗 폴리장 오른쪽 찻길: 인도(N~N+1.2) · 2차선 도로 · 건너편 인도 · 횡단보도(셔터 앞) */
+const ROAD = { s0: N, r0: N + 1.2, r1: NX - .9, x1: NX, cw0: 10.6, cw1: 13.4 };
+function drawRoad() {
+  const { s0, r0, r1, x1, cw0, cw1 } = ROAD, mid = (r0 + r1) / 2;
+  // 인도 (보도블럭)
+  for (const [a, b] of [[s0, r0], [r1, x1]]) for (let j = 0; j < N * 2; j++) for (let i = 0; i < Math.round((b - a) * 2); i++) topQuad(a + i / 2, j / 2, Math.min(b, a + (i + 1) / 2), (j + 1) / 2, 0, (i + j) % 2 ? "#C9C2B6" : "#D6CFC2");
+  // 아스팔트
+  topQuad(r0, 0, r1, N, 0, "#4A4C54");
+  seed = 31; G.globalAlpha = .18; for (let k = 0; k < 160; k++) { const [x, y] = iso(r0 + rnd() * (r1 - r0), rnd() * N); px(x, y, 1, 1, rnd() < .5 ? "#2E3036" : "#6A6C74"); } G.globalAlpha = 1; seed = 7;
+  // 연석 · 차선
+  line(...iso(r0, 0), ...iso(r0, N), "#F2F0EA"); line(...iso(r1, 0), ...iso(r1, N), "#F2F0EA");
+  for (let y = .4; y < N; y += 1.6) if (y + .9 < cw0 || y > cw1) { topQuad(mid - .07, y, mid + .07, Math.min(N, y + .9), 0, "#F2C230"); }
+  // 횡단보도 (셔터 바로 앞)
+  for (let x = r0 + .2; x < r1 - .1; x += .5) topQuad(x, cw0, x + .28, cw1, 0, "#F4F4F0");
+}
+function streetLight(gx, gy) {
+  addBlock(gx, gy, .2, .2);
+  addObj(gx, gy, .2, .2, 78, () => {
+    box(gx, gy, .2, .2, 70, "#7A7E88", "#5E626C", "#4A4E58");
+    box(gx - .15, gy - .45, .3, .6, 3, "#FFF2A8", "#C8C08A", "#B0A878", 70);
+  });
+}
+function busStop(gx, gy) {
+  addBlock(gx, gy, .7, .25);
+  addObj(gx, gy, .7, .25, 60, () => {
+    box(gx + .3, gy, .1, .1, 40, "#7A7E88", "#5E626C", "#4A4E58");
+    box(gx, gy, .7, .12, 14, "#2F68C8", "#2458A8", "#1C4888", 40);
+    const [cx, cy] = iso(gx + .35, gy + .06, 47); px(cx - 5, cy - 1, 10, 3, "#FFFFFF");
+  });
+}
+/* 지나가는 차 (화면에서만, 위험하진 않아요) */
+const CARS = [{ lane: ROAD.r0 + .55, dir: 1, period: 13, off: 0, col: "#E85A5A" }, { lane: ROAD.r1 - 1.45, dir: -1, period: 17, off: 6, col: "#4FA0E0" }, { lane: ROAD.r0 + .55, dir: 1, period: 13, off: 7, col: "#F2C230" }];
+function carPos(c, now) { const t = ((now / 1000 + c.off) % c.period) / c.period, y = -3 + t * (N + 6); return [c.lane, c.dir > 0 ? y : N + 3 - (y + 3)]; }
+let lastHonk = 0;
+function carItems(now) {
+  return CARS.map(c => { const [x, y] = carPos(c, now); return { d: x + y + 1.2, f: () => {
+    if (y < -2.2 || y > N + .2) return;
+    const w = .9, d = 1.7, dk = avShade(c.col, -.25), lt = avShade(c.col, .2);
+    box(x, y, w, d, 7, lt, c.col, dk, 2);
+    box(x + .1, y + (c.dir > 0 ? .35 : .45), w - .2, .9, 5, "#CFE6F4", "#9CC4DC", "#7EA8C4", 9);
+    for (const [a, b] of [[.05, .25], [w - .05, .25], [.05, d - .25], [w - .05, d - .25]]) { const [qx, qy] = iso(x + a, y + b, 2); px(qx - 1, qy - 1, 3, 3, "#1E1E24"); }
+    const fy = c.dir > 0 ? y + d : y; const [hx, hy] = iso(x + .2, fy, 5), [hx2, hy2] = iso(x + w - .2, fy, 5); px(hx, hy, 2, 1, "#FFF6B0"); px(hx2, hy2, 2, 1, "#FFF6B0");
+  } }; });
+}
 let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
 function stain(cx, cy, r, c, a) {
   G.globalAlpha = a; const pts = []; for (let k = 0; k < 12; k++) { const t = k / 12 * Math.PI * 2, rr2 = r * (.7 + rnd() * .5); pts.push(iso(cx + Math.cos(t) * rr2, cy + Math.sin(t) * rr2)); } poly(pts, c); G.globalAlpha = 1;
@@ -506,8 +553,9 @@ function stain(cx, cy, r, c, a) {
 function drawRoom() {
   seed = 7;
   // 바닥판 옆면 (앞쪽은 시멘트 두께)
-  poly([iso(0, N), iso(N, N), iso(N, N, -10), iso(0, N, -10)], "#8E887C"); outline([iso(0, N), iso(N, N), iso(N, N, -10), iso(0, N, -10)]);
-  poly([iso(N, 0), iso(N, N), iso(N, N, -10), iso(N, 0, -10)], "#7E786C"); outline([iso(N, 0), iso(N, N), iso(N, N, -10), iso(N, 0, -10)]);
+  poly([iso(0, N), iso(NX, N), iso(NX, N, -10), iso(0, N, -10)], "#8E887C"); outline([iso(0, N), iso(NX, N), iso(NX, N, -10), iso(0, N, -10)]);
+  poly([iso(NX, 0), iso(NX, N), iso(NX, N, -10), iso(NX, 0, -10)], "#7E786C"); outline([iso(NX, 0), iso(NX, N), iso(NX, N, -10), iso(NX, 0, -10)]);
+  drawRoad();
   // 실내: 낡은 시멘트 타일 / 야외: 거친 콘크리트
   for (let i = 0; i < N * 2; i++) for (let j = 0; j < N * 2; j++) {
     const out = i >= INX * 2; topQuad(i / 2, j / 2, (i + 1) / 2, (j + 1) / 2, 0, out ? ((i + j) % 2 ? "#A9A79D" : "#A3A197") : ((i + j) % 2 ? "#BDB5A7" : "#B4AB9C"));
@@ -884,6 +932,7 @@ function buildWorld() {
   // 야외 폴리장
   frp(18.2, 4.6); frp(21.2, 6.2); drum(23.6, .6, "#E8B83A"); drum(24.4, .9, "#E8B83A"); drum(24.0, 1.8, "#2F68C8"); drum(25.0, 1.9, "#E8B83A");
   sawhorses(18.4, 13.2); bucket(21.0, 13.6, "#6F8FB0"); bucket(21.4, 14.0); plasticChair(17.4, 17.4, RED, "e"); plasticChair(17.4, 18.4, BLUE, "e"); bin(17.5, 19.6, "#7A8A9A");
+  streetLight(N + .5, 3.6); streetLight(N + .5, 16.2); streetLight(N + .5, 23.4); busStop(NX - .85, 6.4); // 찻길 가로등·버스 정류장
   plant(25.0, 12.0, 1.4); plant(25.0, 17.0, 1.3); plant(24.6, 21.6, 1.5); plant(19.6, 24.6, 1.1); frp(23.4, 23.6); drum(17.2, 24.8, "#E8B83A"); drum(25.2, 9.2, "#2F68C8");  WORKS.forEach(workObj); extraProps(); // 친구들이 만든 작품 + 고량주·폐기물장
   if (!bg) { bg = document.createElement("canvas"); bg.width = WWID; bg.height = WHEI; const q = bg.getContext("2d"); const prev = G; G = q; drawRoom(); G = prev; }
   objs.forEach(bake);
@@ -1064,14 +1113,14 @@ function workTable(gx, gy) {
 const onPlat = (x, y) => x >= PLAT.x && x <= PLAT.x + PLAT.w && y >= PLAT.y && y <= PLAT.y + PLAT.d;
 const zAt = (x, y) => onPlat(x, y) ? PLAT.h : 0;
 function blocked(x, y) {
-  if (x < .35 || y < .35 || x > N - .35 || y > N - .35) return true;
+  if (x < .35 || y < .35 || x > NX - .35 || y > N - .35) return true;
   for (const b of blocks) if (x > b.x - .22 && x < b.x + b.w + .22 && y > b.y - .22 && y < b.y + b.d + .22) return true;
   return false;
 }
 function findPath(tx, ty, fx = me.x, fy = me.y) {
-  const CS = .5, n = N / CS, ok = (i, j) => i >= 0 && j >= 0 && i < n && j < n && !blocked((i + .5) * CS, (j + .5) * CS), K = (i, j) => i * 100 + j;
+  const CS = .5, n = N / CS, ni = NX / CS, ok = (i, j) => i >= 0 && j >= 0 && i < ni && j < n && !blocked((i + .5) * CS, (j + .5) * CS), K = (i, j) => i * 100 + j;
   const si = Math.floor(fx / CS), sj = Math.floor(fy / CS); let ti = Math.floor(tx / CS), tj = Math.floor(ty / CS);
-  if (!ok(ti, tj)) { let bd = 1e9; for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) if (ok(i, j)) { const dd = (i - ti) ** 2 + (j - tj) ** 2; if (dd < bd) { bd = dd; ti = i; tj = j; } } tx = (ti + .5) * CS; ty = (tj + .5) * CS; }
+  if (!ok(ti, tj)) { let bd = 1e9; for (let i = 0; i < ni; i++) for (let j = 0; j < n; j++) if (ok(i, j)) { const dd = (i - ti) ** 2 + (j - tj) ** 2; if (dd < bd) { bd = dd; ti = i; tj = j; } } tx = (ti + .5) * CS; ty = (tj + .5) * CS; }
   if (blocked(tx, ty)) { tx = (ti + .5) * CS; ty = (tj + .5) * CS; }
   const prev = new Map([[K(si, sj), null]]), q = [[si, sj]];
   while (q.length) {
@@ -1868,7 +1917,7 @@ function goDump() {
 }
 function updBag() { bagEl.hidden = !carried; bagEl.textContent = carried >= BAG_MAX ? `🗑️ 봉투 꽉 참! 폴리장 옆 초록 컨테이너를 눌러서 버려줘` : `🗑️ 봉투 ${carried}/${BAG_MAX} · 다 모으면 폴리장 옆 초록 컨테이너에 버려`; }
 /* 처음 들어오면 한 번 알려줘요 */
-setTimeout(function hint() { if (!myChar) { setTimeout(hint, 3000); return; } try { if (localStorage.getItem("mc-trash-hint")) return; localStorage.setItem("mc-trash-hint", "1"); } catch {} bubble(myChar, "바닥에 쓰레기 많네… 눌러서 주워볼까? 🗑️"); }, 6000);
+setTimeout(function hint() { if (!myChar) { setTimeout(hint, 3000); return; } try { if (localStorage.getItem("mc-trash-hint")) return; localStorage.setItem("mc-trash-hint", "1"); } catch {} bubble(myChar, "청소하고 싶으면 오른쪽 아래 🧹 버튼 눌러봐!"); }, 6000);
 /* ---------- 🛒 포인트 상점 + 🏆 순위 (재료 대신 꾸미기·칭호·간식) ---------- */
 const SHOP = [
   { id: "sprout", kind: "acc", name: "🌱 새싹", price: 5 }, { id: "heart", kind: "acc", name: "💗 하트", price: 10 }, { id: "star", kind: "acc", name: "⭐ 별", price: 15 },
@@ -2353,6 +2402,18 @@ setTimeout(() => {
   $("eyeClose").onclick = () => $("eyeDlg").close();
 }, 0);
 
+/* ---------- 🧹 청소 모드: 쓰레기 줍기·석고 긁기는 하고 싶을 때만 (쥬 요청) ----------
+   꺼져 있으면 바닥을 눌러도 그냥 걸어가요. 켜면 쓰레기·석고 자국을 눌러서 치우고 포인트를 받아요. */
+let cleanMode = (() => { try { return localStorage.getItem("mc-clean") === "1"; } catch { return false; } })();
+{ const ht = hitTrash; hitTrash = (...a) => cleanMode ? ht(...a) : null; }
+{ const hs = hitStain; hitStain = (...a) => cleanMode ? hs(...a) : null; }
+function setCleanMode(on) {
+  cleanMode = on; try { localStorage.setItem("mc-clean", on ? "1" : "0"); } catch {}
+  const b = $("cleanBtn"); b.setAttribute("aria-pressed", String(on)); b.title = on ? "청소 모드 끄기" : "청소 모드 켜기";
+  if (myChar) bubble(myChar, on ? "🧹 청소 모드 ON! 쓰레기랑 석고 자국 눌러서 치우자" : "청소 모드 OFF. 이제 그냥 돌아다닐래");
+}
+setTimeout(() => { $("cleanBtn").onclick = e => { e.stopPropagation(); setCleanMode(!cleanMode); }; $("cleanBtn").setAttribute("aria-pressed", String(cleanMode)); }, 0);
+
 /* 입력 */
 const blockedUI = () => $("pickDlg").open || $("eyeDlg").open || $("sculptDlg").open || $("boardDlg").open || !$("lightbox").hidden;
 addEventListener("keydown", e => {
@@ -2450,6 +2511,7 @@ function tick(now) {
   // 친구들 위치는 부드럽게 따라가요
   for (const o of others.values()) { const k = Math.min(1, dt * 10); o.x += (o.tx - o.x) * k; o.y += (o.ty - o.y) * k; o.step = o.walking ? o.step + dt * (o.running ? 12 : 8) : 0; }
   updateNpcs(dt, now);
+  if (myChar && now - lastHonk > 6000 && CARS.some(c => { const [x, y] = carPos(c, now); return Math.abs(me.x - (x + .45)) < .8 && Math.abs(me.y - (y + .85)) < 1.4; })) { lastHonk = now; bubble(myChar, "빵빵! 🚗 차 조심!"); } // 찻길 한가운데 있으면
   pushPresence();
   draw(now);
   requestAnimationFrame(tick);
@@ -2477,7 +2539,7 @@ function draw(now) {
     [[.2, 3, "#E06A4A"], [.45, 3, "#7FB4EA"], [.7, 3, "#FFD84A"], [.2, 14, "#FF8FB1"], [.5, 14, "#A8D870"]].forEach(([u, v, c]) => faceQuad(f, u, v, u + .2, v + 5, c, OLC));
     poly([f(.94, 1), f(.94, 37), iso(1.75, 11.45, 37), iso(1.75, 11.45, 1)], "#F4F4F4"); outline([f(.94, 1), f(.94, 37), iso(1.75, 11.45, 37), iso(1.75, 11.45, 1)]);
   } });
-  list.push(boardItem());
+  list.push(boardItem()); list.push(...carItems(now)); // 🚗 찻길 차
   // 캐릭터: 나, 접속한 친구, 비어 있는 캐릭터(자기 자리에 앉아 있음)
   const actors = [];
   if (myChar) actors.push({ c: myChar, x: me.x, y: me.y, pose: me.pose, flip: me.flip, step: me.step, h: me.seat ? me.seat.h : 0, me: true, outfit: myOutfit, drunk, acc: myAcc, running: me.running, jumpAt: me.jumpAt, eye: myEye });
