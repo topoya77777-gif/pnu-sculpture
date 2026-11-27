@@ -551,9 +551,16 @@ function drawRoad() {
 }
 /* 🪜 야외 계단: 찻길 가기 전, 뒤쪽(위층)으로 올라가요. 지금은 위층 공사 중 */
 const STAIRS = { x: INX + .6, y: .35, w: OUTX - INX - 1.2, n: 8, sd: .5, sh: 6 }; // 야외 폭에 맞춘 넓은 계단 // 맨 뒤 층계참(y .35~1.15) + 앞으로 계단 8칸
+function stairZ(px2, py2) { // 큰 계단 위 높이 (맨 위 층계참 = 가장 높음)
+  const { x, y, w, n, sd, sh } = STAIRS;
+  if (px2 < x || px2 > x + w || py2 < y || py2 > y + .8 + n * sd) return 0;
+  const t = py2 - (y + .8); if (t < 0) return n * sh;
+  return Math.max(0, n - Math.floor(t / sd)) * sh;
+}
+setInterval(() => { if (!myChar || me.cs >= 0) return; const up = stairZ(me.x, me.y) >= STAIRS.n * STAIRS.sh; if (up && !me.upMsg) { me.upMsg = 1; bubble(myChar, "계단 꼭대기 도착! 🪜 위층은 아직 공사 중이래 🚧"); } else if (!up) me.upMsg = 0; }, 500);
 function outdoorStairs() {
   const { x, y, w, n, sd, sh } = STAIRS, land = .8, len = land + n * sd, top = n * sh;
-  addBlock(x, y, w, len);
+  // (막지 않아요 — 올라갈 수 있게)
   addObj(x, y, w, len, top + 26, () => {
     const C = ["#C8C2B6", "#B4AEA2", "#A09A8E"];
     box(x, y, w, land, top, ...C); // 층계참
@@ -565,6 +572,7 @@ function outdoorStairs() {
     }
     const [sx, sy] = iso(x + w / 2, y + .3, top + 2); px(sx - 7, sy - 12, 14, 10, "#F2C230"); px(sx - 6, sy - 11, 12, 8, "#2A2A2A"); px(sx - 4, sy - 9, 8, 1, "#F2C230"); px(sx - 4, sy - 6, 8, 1, "#F2C230"); // 🚧 공사중 표지
   });
+  objs[objs.length - 1].depth = -50; // 계단 위에 선 사람이 계단에 가려지지 않게, 계단을 먼저 그려요
 }
 /* 🪨 석조실: 과실 옆(사람 다닐 길 1.7칸 띄움)에 하얀 천막. 뒤·과실 쪽은 흰 천 벽, 앞·오른쪽은 열려 있어요 */
 const STONE = { x0: INX + .3 + 3.0, y0: 6.6, x1: INX + .3 + 3.0 + 9, /* 과실 벽돌벽과 석조실 사이 길 넓게 (쥬 요청) */ y1: 16.8, H: 44, R: 54 };
@@ -1356,7 +1364,7 @@ function workTable(gx, gy) {
 
 /* ---------- 걷기 ---------- */
 const onPlat = (x, y) => x >= PLAT.x && x <= PLAT.x + PLAT.w && y >= PLAT.y && y <= PLAT.y + PLAT.d;
-const zAt = (x, y) => onPlat(x, y) ? PLAT.h : 0;
+const zAt = (x, y) => onPlat(x, y) ? PLAT.h : stairZ(x, y); // 🪜 계단 위에서는 한 칸씩 올라가요
 function blocked(x, y) {
   if (x < .35 || y < .35 || x > NX - .35 || y > NY - .35) return true;
   for (const b of blocks) if (x > b.x - .22 && x < b.x + b.w + .22 && y > b.y - .22 && y < b.y + b.d + .22) return true;
@@ -2843,7 +2851,7 @@ cv.addEventListener("pointerdown", e => { // 차 관련 누르기를 먼저 처�
   }
   { const v = hitVeh(wx, wy); if (v) { e.stopImmediatePropagation(); boardVeh(v); return; } }
   { const r = hitStoneRock(wx, wy); if (r) { e.stopImmediatePropagation(); goCarveStone(r); return; } } // 🪨 석조실 돌 깎기
-  if (hitStairs(wx, wy)) { e.stopImmediatePropagation(); const { x, y, w, n, sd } = STAIRS; walkThen(x + w / 2, y + .8 + n * sd + .5, () => bubble(myChar, "위층은 아직 공사 중이래 🚧 곧 올라갈 수 있어!")); }
+  if (hitStairs(wx, wy)) { e.stopImmediatePropagation(); const { x, y, w } = STAIRS, [gx] = toGrid(wx, wy, 0); goTo(Math.min(x + w - .4, Math.max(x + .4, gx)), y + .4); } // 🪜 계단 누르면 꼭대기까지 올라가요
 }, true);
 setTimeout(() => { const b = $("carBtn"); if (b) b.onclick = e => { e.stopPropagation(); if (me.cs >= 0) leaveCar(); }; updCarBtn(); startCarPark(); }, 0);
 addEventListener("keydown", e => { if ((e.key === "e" || e.key === "E") && me.cs >= 0 && !/INPUT|TEXTAREA/.test(e.target.tagName)) leaveCar(); });
