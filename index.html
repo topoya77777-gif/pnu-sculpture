@@ -531,6 +531,7 @@ const DEPTS = [
   { name: "🪨 석조실", at: [INX + 2 + 4.5, 6.8, 62], color: "#7a7468" },
   { name: "과실 문", at: [13.6, 26.2, 48], color: "#8a6a4a" },
   { name: "복도", at: [6, 27.6, 30], color: "#8a8478" },
+  { name: "🌸 등나무 쉼터", at: [8, 37.2, 66], color: "#8a5ab0" },
   { name: "부산대 앞 찻길", at: [OUTX + 3.6, 1.0, 40], color: "#4a4c58" },
 ];
 /* 🚗 야외 오른쪽 찻길: 인도(N~N+1.2) · 2차선 도로 · 건너편 인도 · 횡단보도(앞마당 앞) */
@@ -639,6 +640,35 @@ function pollyYard() {
   frp(X + 1.4, 7.0); frp(X + 4.6, 8.6); drum(X + 8.4, 6.0, "#E8B83A"); drum(X + 9.2, 6.3, "#E8B83A"); drum(X + 8.8, 7.2, "#2F68C8"); drum(X + 9.8, 7.3, "#E8B83A");
   sawhorses(X + 1.6, 16.2); bucket(X + 4.2, 16.6, "#6F8FB0"); bucket(X + 4.6, 17.0); plasticChair(X + .8, 20.2, "#D8343A", "e"); plasticChair(X + .8, 21.2, "#2F68C8", "e"); bin(X + .9, 22.4, "#7A8A9A");
   plant(X + 18.6, 12.0, 1.4); plant(X + 18.6, 18.0, 1.3); plant(X + 18.2, 24.0, 1.5); frp(X + 13.0, 22.6); frp(X + 12.0, 9.6); drum(X + 6.2, 25.4, "#E8B83A"); drum(X + 15.4, 15.2, "#2F68C8");
+}
+/* 🌸 앞마당 등나무 쉼터: 나무 기둥 + 등나무 지붕(보라 꽃 주렁주렁) + 아래 마주 보는 벤치 */
+const WIST = { x0: 4, y0: 37, x1: 12.5, y1: 43, H: 50 };
+function bench(gx, gy, w) { // 나무 벤치 (x 방향으로 길게), 눌러서 앉아요
+  const d = .55; addBlock(gx, gy, w, d);
+  for (let u = .45; u < w - .2; u += .8) SEATS.push({ x: gx + u, y: gy + d / 2, h: 8 });
+  addObj(gx, gy, w, d, 14, () => {
+    for (const lx of [.1, w - .22]) box(gx + lx, gy + .08, .12, d - .16, 6, "#6E5238", "#5A422C", "#46321E");
+    box(gx, gy, w, d, 2, "#C89A62", "#A87C48", "#8A6034", 6);
+    for (let u = .25; u < w; u += .25) line(...iso(gx + u, gy, 8), ...iso(gx + u, gy + d, 8), "#B08550");
+  });
+}
+function wisteriaYard() {
+  const { x0, y0, x1, y1, H } = WIST;
+  for (const [px2, py2] of [[x0, y0], [x1 - .25, y0], [x0, y1 - .25], [x1 - .25, y1 - .25], [(x0 + x1) / 2, y0], [(x0 + x1) / 2, y1 - .25]]) {
+    addBlock(px2, py2, .25, .25); addObj(px2, py2, .25, .25, H + 4, () => { box(px2, py2, .25, .25, H, "#9A7450", "#7E5C3C", "#664A30"); line(...iso(px2 + .12, py2 + .25, 4), ...iso(px2 + .18, py2 + .25, H - 4), "#5E8A3A"); }); // 기둥 + 감고 올라가는 덩굴
+  }
+  bench(x0 + .8, y0 + 1.0, x1 - x0 - 1.6); bench(x0 + .8, y1 - 1.6, x1 - x0 - 1.6); // 지붕 아래 마주 보는 벤치
+  bench(x1 + 3, y0 + 2.2, 3.2); bench(x1 + 3, y1 + 1.4, 3.2); // 바깥 벤치
+}
+function wisteriaRoof() { // 사람 위로 그려요 (살짝 비치게)
+  const { x0, y0, x1, y1, H } = WIST; let sd = 4242; const r = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  for (const y of [y0 + .1, y1 - .15]) box(x0 - .1, y, x1 - x0 + .2, .12, 2, "#9A7450", "#7E5C3C", "#664A30", H); // 들보
+  for (let x = x0 + .2; x < x1; x += .6) box(x, y0 - .2, .08, y1 - y0 + .4, 1, "#A88460", "#8A6A48", "#705234", H + 2); // 서까래
+  G.globalAlpha = .82;
+  for (let k = 0; k < 150; k++) { const [a, b] = iso(x0 + r() * (x1 - x0), y0 + r() * (y1 - y0), H + 3 + r() * 3); disc(a, b, 2 + Math.floor(r() * 3), r() < .5 ? "#5E9A40" : "#77B054"); } // 잎
+  for (let k = 0; k < 60; k++) { const [a, b] = iso(x0 + .2 + r() * (x1 - x0 - .4), y0 + .2 + r() * (y1 - y0 - .4), H + 2), len = 6 + Math.floor(r() * 10), c1 = r() < .5 ? "#B48ADC" : "#9A6ACC"; // 보라 꽃송이 주렁주렁
+    for (let j = 0; j < len; j++) px(a - (j < len - 3 ? 1 : 0), b + j, j < len - 3 ? 3 : 1, 1, j % 3 === 0 ? "#D8C0F0" : c1); }
+  G.globalAlpha = 1;
 }
 function hitStairs(wx, wy) { const { x, y, w, n, sd } = STAIRS, len = .8 + n * sd, [gx, gy] = toGrid(wx, wy, 20); return gx > x - .2 && gx < x + w + .2 && gy > y - .2 && gy < y + len + .4; }
 function streetLight(gx, gy) {
@@ -889,7 +919,7 @@ function sawhorses(gx, gy) {
   });
 }
 function tarpOverlay() { // 파란 천막은 폴리장과 함께 없앰 → 지금은 석조실 하얀 천막 지붕
-  stoneRoof(); return; // 폴리장 파란 천막은 없앰 (쥬 요청)
+  stoneRoof(); wisteriaRoof(); return; // 폴리장 파란 천막은 없앰 (쥬 요청) · 등나무 지붕
   const z = 46, x0 = POLLY.tx0, y0 = POLLY.ty0, x1 = POLLY.tx1, y1 = POLLY.ty1; // 폴리장 파란 천막
   for (const [x, y] of [[x0, y0], [x1, y0], [x0, y1], [x1, y1]]) { const [a, b] = iso(x, y), [c, d] = iso(x, y, z); line(a, b, c, d, "#6A6A70"); }
   G.globalAlpha = .82; poly([iso(x0, y0, z + 4), iso(x1, y0, z + 4), iso(x1, y1, z), iso(x0, y1, z)], "#3A78D0"); G.globalAlpha = 1;
@@ -1113,6 +1143,7 @@ function buildWorld() {
   // 바깥: 폴리장은 없애고 빈 야외 공간 (찻길 가로등·버스 정류장만)
   streetLight(OUTX + .5, 3.6); streetLight(OUTX + .5, 16.2); streetLight(OUTX + .5, 25.4); busStop(NX - .85, 6.4);
   outdoorStairs(); // 뒤쪽(위층)으로 올라가는 계단
+  wisteriaYard(); // 🌸 앞마당 등나무 쉼터 + 벤치
   stoneRoom(); // 🪨 석조실 (하얀 천막)
   WORKS.forEach(workObj); extraProps(); // 친구들이 만든 작품 + 고량주·분리수거함
   if (!bg) { bg = document.createElement("canvas"); bg.width = WWID; bg.height = WHEI; const q = bg.getContext("2d"); const prev = G; G = q; drawRoom(); G = prev; }
