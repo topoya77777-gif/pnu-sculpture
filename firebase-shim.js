@@ -65,7 +65,7 @@
           else await joinOverlay();
         }
       } catch (e) { alertBox("서버에 연결하지 못했어. config.js 설정을 확인해줘. (" + (e.message || e) + ")"); return; }
-      rt.ref("members").on("value", s => { members = s.val() || {}; if (!members[uid]) location.reload(); });
+      rt.ref("members").on("value", s => { const v = s.val() || {}; members = v; if (Object.keys(v).length && !v[uid]) location.reload(); }); // 목록이 진짜로 왔는데 내가 없을 때(내보내기)만 새로고침
       if (isAdmin) adminUI();
       resolve();
     });

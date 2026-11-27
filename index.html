@@ -6,7 +6,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-<script src="config.js?v=2"></script><script src="firebase-shim.js?v=2"></script>
+<script src="config.js?v=2"></script><script src="firebase-shim.js?v=3"></script>
 <style>
 #joinOv, #adminOv { position: fixed; inset: 0; z-index: 100; background: rgba(30,20,15,.55); display: grid; place-items: center; padding: 16px; font-family: "Noto Sans KR", system-ui, sans-serif; }
 #joinOv[hidden], #adminOv[hidden] { display: none; }
@@ -2649,6 +2649,21 @@ function openWardrobe(tab = "char") {
 }
 { const oe = openEyeDlg; openEyeDlg = () => { $("wdTabs").querySelectorAll("button").forEach(b => { b.setAttribute("aria-selected", String(b.dataset.t === "eye")); b.onclick = () => openWardrobe(b.dataset.t); }); oe(); }; }
 setTimeout(() => { $("eyeClose").onclick = () => $("eyeDlg").close(); }, 0);
+
+/* ---------- 📍 새로고침해도 내가 서 있던 자리 기억하기 (사람만, 차에 탄 건 기억 안 해요) ---------- */
+const posKey = c => "mc-pos-" + c;
+function saveMyPos() { try { if (myChar && !(me.cs >= 0) && !me.hurtUntil) localStorage.setItem(posKey(myChar), JSON.stringify({ x: Math.round(me.x * 100) / 100, y: Math.round(me.y * 100) / 100, s: me.seat ? 1 : 0 })); } catch {} }
+setInterval(saveMyPos, 1500); addEventListener("pagehide", saveMyPos); addEventListener("beforeunload", saveMyPos);
+{ const orig = chooseChar; chooseChar = id => {
+  orig(id);
+  try { const v = JSON.parse(localStorage.getItem(posKey(id)) || "null");
+    if (v && typeof v.x === "number" && typeof v.y === "number") {
+      const seat = v.s && SEATS.find(s => Math.hypot(s.x - v.x, s.y - v.y) < .3 && (!s.occ || s.occ === me));
+      if (seat) { if (me.seat !== seat) { standUp(me); sitOn(me, seat); } } // 앉아 있던 자리면 다시 앉기
+      else if (!blocked(v.x, v.y)) { if (me.seat) standUp(me); me.x = v.x; me.y = v.y; me.path = []; } // 서 있던 자리로
+      pushPresence(true);
+    } } catch {}
+}; }
 
 /* ---------- 🧹 쓰레기·석고 자국은 "딱 그걸" 눌렀을 때만 치워요 (쥬 요청) ----------
    옆 바닥을 누르면 그냥 걸어가요. 버튼 없이 바로 눌러서 치우기. */
