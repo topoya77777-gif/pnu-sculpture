@@ -8,7 +8,18 @@
   const wrap = p => p.catch(e => { throw denied(e); });
 
   /* ---------- 들어오기: 첫 사람은 관리자, 친구는 초대 코드 ---------- */
-  function joinOverlay(err) {
+  /* 한 번 들어온 사람은 이 기기에 이름·코드를 기억해서 다음부터 바로 들어가요.
+     링크에 ?k=초대코드 가 붙어 있으면 코드도 안 쳐도 돼요 (홈 화면 앱에도 그대로 남아요). */
+  const LS = { get: k => { try { return localStorage.getItem(k) || ""; } catch { return ""; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} } };
+  const urlCode = new URLSearchParams(location.search).get("k") || "";
+  function keepCode(code) {
+    LS.set("pnu-code", code);
+    try { const u = new URL(location.href); if (u.searchParams.get("k") !== code) { u.searchParams.set("k", code); history.replaceState(null, "", u); } } catch {}
+  }
+  async function tryJoin(name, code) { await rt.ref("members/" + uid).set({ name, code, t: Date.now() }); LS.set("pnu-name", name); keepCode(code); }
+  async function joinOverlay(err) {
+    const code0 = urlCode || LS.get("pnu-code"), name0 = LS.get("pnu-name");
+    if (!err && code0 && name0) { try { await tryJoin(name0, code0); return; } catch {} } // 기억해 둔 걸로 조용히 다시 들어가기
     return new Promise(res => {
       let ov = document.getElementById("joinOv");
       if (!ov) {
@@ -20,12 +31,16 @@
         document.body.appendChild(ov);
       }
       ov.hidden = false; ov.querySelector("#joinErr").textContent = err || "";
+      ov.querySelector("#joinName").value = name0; ov.querySelector("#joinCode").value = code0;
+      if (code0) { ov.querySelector("#joinCode").hidden = true; ov.querySelector('label[for="joinCode"]').hidden = true; ov.querySelector("p").textContent = "내 이름만 적어줘. 다음부터는 바로 들어가져."; }
       ov.querySelector("form").onsubmit = async e => {
         e.preventDefault();
         const name = ov.querySelector("#joinName").value.trim().slice(0, 12), code = ov.querySelector("#joinCode").value.trim();
         if (!name || !code) { ov.querySelector("#joinErr").textContent = "이름이랑 초대 코드를 둘 다 적어줘."; return; }
-        try { await rt.ref("members/" + uid).set({ name, code, t: Date.now() }); ov.hidden = true; res(); }
-        catch { ov.querySelector("#joinErr").textContent = "초대 코드가 틀렸어. 쥬한테 다시 물어봐."; }
+        try { await tryJoin(name, code); ov.hidden = true; res(); }
+        catch { // 기억해 둔 코드가 바뀌었으면 코드 칸을 다시 보여줘요
+          LS.set("pnu-code", ""); ov.querySelector("#joinCode").hidden = false; ov.querySelector('label[for="joinCode"]').hidden = false; ov.querySelector("#joinCode").value = "";
+          ov.querySelector("#joinErr").textContent = "초대 코드가 틀렸어. 쥬한테 다시 물어봐."; }
       };
     });
   }
