@@ -1978,7 +1978,7 @@ setTimeout(renderMiniRank, 0);
 /* 🔐 작품 만들기 · 게시판은 석고를 긁어야 열려요 (오늘 한 번 긁으면 오늘 하루 계속) */
 const todayKey = () => new Date().toLocaleDateString("ko-KR");
 let workOpenDay = (() => { try { return localStorage.getItem("mc-work-day") || ""; } catch { return ""; } })();
-const workOpen = () => workOpenDay === todayKey();
+const workOpen = () => true; // 석고 긁기는 하고 싶은 사람만 (쥬 요청): 작품 만들기·게시판은 늘 열려 있어요. 긁으면 포인트는 그대로 받아요.
 function unlockWork() {
   const was = workOpen(); workOpenDay = todayKey(); try { localStorage.setItem("mc-work-day", workOpenDay); } catch {}
   updLockBtns(); if (!was) setTimeout(() => myChar && bubble(myChar, "🔓 바닥 정리 끝! 이제 작품 만들기랑 게시판 쓸 수 있다"), 2400);
