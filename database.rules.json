@@ -1,20 +1,37 @@
 {
   "rules": {
     "config": {
-      ".read": "auth != null",
-      "admin": { ".write": "auth != null && (!data.exists() || auth.uid === data.val())" },
-      "inviteCode": { ".write": "auth != null && auth.uid === root.child('config/admin').val()" }
+      "admin": {
+        ".read": "auth != null",
+        ".write": "auth != null && (!data.exists() || auth.uid === data.val())"
+      },
+      "inviteCode": {
+        ".read": "auth != null && auth.uid === root.child('config/admin').val()",
+        ".write": "auth != null && auth.uid === root.child('config/admin').val()"
+      },
+      "codes": {
+        ".read": "auth != null && auth.uid === root.child('config/admin').val()",
+        ".write": "auth != null && auth.uid === root.child('config/admin').val()",
+        "$code": { ".read": "auth != null" }
+      },
+      "charCode": {
+        ".read": "auth != null && auth.uid === root.child('config/admin').val()",
+        ".write": "auth != null && auth.uid === root.child('config/admin').val()"
+      }
+    },
+    "joins": {
+      "$uid": { ".write": "auth != null && auth.uid === $uid && newData.isString() && newData.val().length < 30" }
     },
     "members": {
       ".read": "auth != null && root.child('members/' + auth.uid).exists()",
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && ((auth.uid === $uid && newData.child('code').val() === root.child('config/inviteCode').val()) || auth.uid === root.child('config/admin').val())"
+        ".write": "auth != null && ((auth.uid === $uid && newData.child('char').isString() && root.child('config/codes/' + newData.parent().parent().child('joins/' + $uid).val()).val() === newData.child('char').val()) || auth.uid === root.child('config/admin').val())"
       }
     },
     "presence": {
       ".read": "auth != null && root.child('members/' + auth.uid).exists()",
-      "$uid": { ".write": "auth != null && auth.uid === $uid && root.child('members/' + auth.uid).exists()" }
+      "$uid": { ".write": "auth != null && auth.uid === $uid && root.child('members/' + auth.uid).exists() && (!newData.exists() || auth.uid === root.child('config/admin').val() || newData.child('c').val() === root.child('members/' + auth.uid + '/char').val())" }
     },
     "data": {
       ".read": "auth != null && root.child('members/' + auth.uid).exists()",

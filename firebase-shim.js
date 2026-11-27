@@ -16,31 +16,35 @@
     LS.set("pnu-code", code);
     try { const u = new URL(location.href); if (u.searchParams.get("k") !== code) { u.searchParams.set("k", code); history.replaceState(null, "", u); } } catch {}
   }
-  async function tryJoin(name, code) { await rt.ref("members/" + uid).set({ name, code, t: Date.now() }); LS.set("pnu-name", name); keepCode(code); }
+  /* 친구마다 자기 캐릭터 전용 코드가 있어요 (config/codes/<코드> = 캐릭터). 코드로 들어오면 그 캐릭터로만 움직일 수 있어요.
+     코드는 joins/<내 id>에만 적어서(아무도 못 읽음) 다른 친구가 내 코드를 볼 수 없어요. */
+  const charName = c => { try { return (CHARS[c] && CHARS[c].name) || c; } catch { return c; } };
+  const normCode = s => String(s || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+  async function tryJoin(code) {
+    code = normCode(code); if (!code) throw new Error("no code");
+    const ch = (await rt.ref("config/codes/" + code).get()).val(); if (!ch) throw new Error("bad code");
+    await rt.ref().update({ ["joins/" + uid]: code, ["members/" + uid]: { name: charName(ch), char: ch, t: Date.now() } });
+    keepCode(code);
+  }
   async function joinOverlay(err) {
-    const code0 = urlCode || LS.get("pnu-code"), name0 = LS.get("pnu-name");
-    if (!err && code0 && name0) { try { await tryJoin(name0, code0); return; } catch {} } // 기억해 둔 걸로 조용히 다시 들어가기
+    const code0 = urlCode || LS.get("pnu-code");
+    if (!err && code0) { try { await tryJoin(code0); return; } catch {} } // 링크나 기억해 둔 코드로 조용히 들어가기
     return new Promise(res => {
       let ov = document.getElementById("joinOv");
       if (!ov) {
         ov = document.createElement("div"); ov.id = "joinOv";
-        ov.innerHTML = `<form class="join-card"><h2>조소과 과실</h2><p>쥬한테 받은 초대 코드랑 내 이름을 적어줘.</p>
-          <label for="joinName">이름</label><input id="joinName" maxlength="12" autocomplete="off" placeholder="예) 수아">
-          <label for="joinCode">초대 코드</label><input id="joinCode" maxlength="20" autocomplete="off" autocapitalize="characters" placeholder="예) GWASIL24">
+        ov.innerHTML = `<form class="join-card"><h2>부산대 조소과</h2><p>쥬한테 받은 내 캐릭터 코드를 적어줘. 다음부터는 바로 들어가져.</p>
+          <label for="joinCode">내 코드</label><input id="joinCode" maxlength="20" autocomplete="off" autocapitalize="characters" placeholder="예) SUA7K2">
           <div class="join-err" id="joinErr"></div><button type="submit">들어가기</button></form>`;
         document.body.appendChild(ov);
       }
-      ov.hidden = false; ov.querySelector("#joinErr").textContent = err || "";
-      ov.querySelector("#joinName").value = name0; ov.querySelector("#joinCode").value = code0;
-      if (code0) { ov.querySelector("#joinCode").hidden = true; ov.querySelector('label[for="joinCode"]').hidden = true; ov.querySelector("p").textContent = "내 이름만 적어줘. 다음부터는 바로 들어가져."; }
+      ov.hidden = false; ov.querySelector("#joinErr").textContent = err || (code0 ? "코드가 바뀌었나 봐. 쥬한테 새 코드를 받아줘." : "");
       ov.querySelector("form").onsubmit = async e => {
         e.preventDefault();
-        const name = ov.querySelector("#joinName").value.trim().slice(0, 12), code = ov.querySelector("#joinCode").value.trim();
-        if (!name || !code) { ov.querySelector("#joinErr").textContent = "이름이랑 초대 코드를 둘 다 적어줘."; return; }
-        try { await tryJoin(name, code); ov.hidden = true; res(); }
-        catch { // 기억해 둔 코드가 바뀌었으면 코드 칸을 다시 보여줘요
-          LS.set("pnu-code", ""); ov.querySelector("#joinCode").hidden = false; ov.querySelector('label[for="joinCode"]').hidden = false; ov.querySelector("#joinCode").value = "";
-          ov.querySelector("#joinErr").textContent = "초대 코드가 틀렸어. 쥬한테 다시 물어봐."; }
+        const code = ov.querySelector("#joinCode").value;
+        if (!normCode(code)) { ov.querySelector("#joinErr").textContent = "코드를 적어줘."; return; }
+        try { await tryJoin(code); ov.hidden = true; res(); }
+        catch { LS.set("pnu-code", ""); ov.querySelector("#joinErr").textContent = "코드가 틀렸어. 쥬한테 다시 물어봐."; }
       };
     });
   }
@@ -56,8 +60,8 @@
         }
         isAdmin = (await rt.ref("config/admin").get()).val() === uid;
         const mine = await rt.ref("members/" + uid).get().catch(() => null);
-        if (!(mine && mine.exists())) {
-          if (isAdmin) await rt.ref("members/" + uid).set({ name: "쥬", code: "admin", t: Date.now() });
+        if (!(mine && mine.exists() && (isAdmin || mine.child("char").exists()))) { // 예전 방식으로 들어온 친구도 캐릭터 코드로 다시 들어와요
+          if (isAdmin) await rt.ref("members/" + uid).set({ name: "쥬", char: "ju", t: Date.now() });
           else await joinOverlay();
         }
       } catch (e) { alertBox("서버에 연결하지 못했어. config.js 설정을 확인해줘. (" + (e.message || e) + ")"); return; }
@@ -131,7 +135,8 @@
 
   /* ---------- user: 내 ID, 친구 이름 ---------- */
   const user = {
-    id: async () => uid, isOwner: async () => isAdmin, canEdit: async () => isAdmin, can: async () => true,
+    id: async () => uid, isOwner: async () => isAdmin,
+    lockedChar: async () => (isAdmin ? null : (members[uid] && members[uid].char) || null), // 쥬는 아무 캐릭터나, 친구는 자기 캐릭터만 canEdit: async () => isAdmin, can: async () => true,
     profiles: async ids => Object.fromEntries(ids.map(i => [i, { id: i, name: (members[i] && members[i].name) || "" }])),
     me: async () => ({ id: uid, name: (members[uid] && members[uid].name) || "" }),
   };
@@ -141,21 +146,36 @@
     const btn = document.createElement("button"); btn.className = "admin-btn"; btn.type = "button"; btn.textContent = "⚙️ 관리"; document.body.appendChild(btn);
     const ov = document.createElement("div"); ov.id = "adminOv"; ov.hidden = true; document.body.appendChild(ov);
     const render = async () => {
-      const code = (await rt.ref("config/inviteCode").get()).val() || "";
+      const charCode = (await rt.ref("config/charCode").get()).val() || {};
       ov.innerHTML = `<div class="join-card admin-card"><h2>⚙️ 관리자 메뉴</h2>
-        <label>초대 코드 (친구들한테 알려줘)</label><div class="admin-row"><input id="admCode" value="${code.replace(/[^A-Za-z0-9가-힣_-]/g, "")}" maxlength="20"><button type="button" id="admSave">바꾸기</button></div>
+        <label>캐릭터별 코드 (친구마다 자기 링크를 보내줘)</label><div id="admCodes" class="admin-list"></div>
         <label>참여 중인 친구</label><div id="admMembers" class="admin-list"></div>
         <div class="admin-row"><button type="button" id="admChat">채팅 전체 지우기</button><button type="button" id="admBoard">게시판 전체 지우기</button></div>
         <div class="join-err" id="admMsg"></div><button type="button" id="admClose">닫기</button></div>`;
+      const codes = ov.querySelector("#admCodes"), chars = (() => { try { return Object.keys(CHARS).filter(c => c !== "ju"); } catch { return []; } })();
+      const linkOf = code => location.origin + location.pathname + "?k=" + code;
+      for (const ch of chars) {
+        const row = document.createElement("div"); row.className = "admin-row";
+        const n = document.createElement("span"); n.textContent = charName(ch) + " · " + (charCode[ch] || "코드 없음"); row.appendChild(n);
+        const mk = document.createElement("button"); mk.type = "button"; mk.textContent = charCode[ch] ? "새 코드" : "만들기";
+        mk.onclick = async () => { // 새 코드를 만들면 예전 코드는 못 써요 (이미 들어온 친구는 그대로)
+          const AL = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; let c = ""; for (let i = 0; i < 7; i++) c += AL[Math.floor(Math.random() * AL.length)];
+          const up = { ["config/codes/" + c]: ch, ["config/charCode/" + ch]: c }; if (charCode[ch]) up["config/codes/" + charCode[ch]] = null;
+          await rt.ref().update(up); render();
+        };
+        row.appendChild(mk);
+        if (charCode[ch]) { const cp = document.createElement("button"); cp.type = "button"; cp.textContent = "링크 복사";
+          cp.onclick = async () => { try { await navigator.clipboard.writeText(linkOf(charCode[ch])); cp.textContent = "복사됨!"; } catch { prompt("이 링크를 복사해줘", linkOf(charCode[ch])); } }; row.appendChild(cp); }
+        codes.appendChild(row);
+      }
       const list = ov.querySelector("#admMembers");
       for (const [id, m] of Object.entries(members)) {
         const row = document.createElement("div"); row.className = "admin-row";
-        const n = document.createElement("span"); n.textContent = (m.name || "?") + (id === uid ? " (나)" : ""); row.appendChild(n);
+        const n = document.createElement("span"); n.textContent = (m.name || "?") + (id === uid ? " (나)" : m.char ? "" : " (예전 방식)"); row.appendChild(n);
         if (id !== uid) { const k = document.createElement("button"); k.type = "button"; k.textContent = "내보내기"; k.onclick = async () => { await rt.ref("members/" + id).remove(); await rt.ref("presence/" + id).remove(); render(); }; row.appendChild(k); }
         list.appendChild(row);
       }
       const confirmDo = (b, label, fn) => { b.onclick = () => { if (b.dataset.sure) { fn(); b.textContent = "지웠어!"; delete b.dataset.sure; } else { b.dataset.sure = "1"; b.textContent = label + " (한 번 더 누르면 지워져)"; } }; };
-      ov.querySelector("#admSave").onclick = async () => { const v = ov.querySelector("#admCode").value.trim(); if (v.length < 4) { ov.querySelector("#admMsg").textContent = "4글자 이상으로 해줘."; return; } await rt.ref("config/inviteCode").set(v); ov.querySelector("#admMsg").textContent = "초대 코드를 바꿨어. 이미 들어온 친구는 그대로야."; };
       confirmDo(ov.querySelector("#admChat"), "채팅 전체 지우기", () => rt.ref("data/msgs").remove());
       confirmDo(ov.querySelector("#admBoard"), "게시판 전체 지우기", () => rt.ref("data/board").remove());
       ov.querySelector("#admClose").onclick = () => { ov.hidden = true; };
