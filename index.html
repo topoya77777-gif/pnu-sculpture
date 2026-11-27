@@ -292,7 +292,7 @@ function avShade(hex, f) {
 const app = $("app"), cv = $("world"), g0 = cv.getContext("2d");
 const lo = document.createElement("canvas"), g = lo.getContext("2d");
 let G = g, S = 2, buildings = [], near = null, hover = null, objs = [], blocks = [], bg = null, SEATS = [], seatTag = null;
-const N = 26, OUTX = 50, NX = OUTX + 7, NY = 44, OX = NY * 16 + 16, OY = 88, WWID = (NY + NX) * 16 + 32, WHEI = OY + (NX + NY) * 8 + 30, /* N: 과실 크기, NX·NY: 바깥(앞마당·오른쪽 야외·찻길)까지 */ OLC = "#3a2418", PLAT = { x: -9, y: -9, w: 0, d: 0, h: 0 };
+const N = 26, OUTX = 50, NX = OUTX + 7, NY = 56, OX = NY * 16 + 16, OY = 88, WWID = (NY + NX) * 16 + 32, WHEI = OY + (NX + NY) * 8 + 30, /* N: 과실 크기, NX·NY: 바깥(앞마당·오른쪽 야외·찻길)까지 */ OLC = "#3a2418", PLAT = { x: -9, y: -9, w: 0, d: 0, h: 0 };
 const START = [7.6, 24.4];
 const me = { x: START[0], y: START[1], flip: false, back: true, step: 0, path: [], pose: "stand", seat: null, wantSeat: null };
 const lz = { x: START[0] + .7, y: START[1] + .6, t: 0, say: "", sayUntil: 0, flip: false };
