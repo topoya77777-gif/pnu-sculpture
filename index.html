@@ -2,7 +2,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="부산대 조소과">
-<meta name="theme-color" content="#efe3cf"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-180.png">
+<meta name="theme-color" content="#efe3cf"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-180.png?v=2"><link rel="icon" type="image/png" href="icon-192.png?v=2">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -132,7 +132,7 @@ button { touch-action: manipulation; }
 @media (max-width: 760px) {
   .hud .hud-btn, .help, .pad { display: none !important; }
   .hud { top: max(8px, env(safe-area-inset-top, 0px)); left: max(8px, env(safe-area-inset-left, 0px)); }
-  .brand { font-size: 1rem; padding: 4px 10px 4px 4px; } .brand svg { width: 26px; height: 26px; }
+  .brand { font-size: 1rem; padding: 4px 10px 4px 4px; } .brand svg, .brand img.logo { width: 26px !important; height: 26px !important; }
   .chip-on { font-size: .74rem; padding: 6px 10px; }
   .world { position: fixed; left: 0; right: 0; top: 0; bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
   .tabbar { display: grid; grid-template-columns: repeat(5, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: var(--panel); border-top: 1px solid var(--line);
@@ -270,6 +270,7 @@ function say(text, ms = 3500) { try { if (myChar) bubble(myChar, text); } catch 
 const logoSvg = document.querySelector("#rooms .brand svg").outerHTML.replace("<svg", '<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256"');
 const lizardImg = new Image(); lizardImg.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(logoSvg.replace(/<rect[^>]*>(<\/rect>)?/, ""));
 $("hudBrand").innerHTML = document.querySelector("#rooms .brand").innerHTML;
+{ const sv = $("hudBrand").querySelector("svg"); if (sv) { const im = document.createElement("img"); im.className = "logo"; im.src = "icon-192.png?v=2"; im.alt = ""; im.style.cssText = "width:32px;height:32px;image-rendering:pixelated;border-radius:8px"; sv.replaceWith(im); } } // 🌈 새 도트 아이콘
 /* ---------- 도트 그리기 도구 (안티앨리어싱 없이 직접 칠함) ---------- */
 const iso = (gx, gy, z = 0) => [Math.round(OX + (gx - gy) * 16), Math.round(OY + (gx + gy) * 8 - z)];
 const px = (x, y, w, h, c) => { G.fillStyle = c; G.fillRect(Math.round(x), Math.round(y), w, h); };
@@ -494,8 +495,6 @@ const DEPTS = [
   { name: "부산대 조소과", at: [5, .2, 74], color: "#6a5a4a" },
   { name: "라꾸라꾸 존", at: [1.6, 2.4, 36], color: "#4a6a9a" },
   { name: "개인 작업대", at: [10.4, .4, 64], color: "#8a8478" },
-  { name: "소조 코너", at: [8.8, 8.2, 52], color: "#8a5a3a" },
-  { name: "작품 좌대", at: [4.4, 16.4, 50], color: "#6a6a72" },
   { name: "쥬 졸업작품", at: [11.2, 21.0, 46], color: "#5a5048" },
   { name: "폴리장 (야외)", at: [21, 1.2, 46], color: "#2f6fb0" },
   { name: "폐기물 처리장", at: [22.6, 10.0, 40], color: "#4e7a34" },
@@ -868,12 +867,10 @@ function buildWorld() {
   // 가운데: 노란 장판 평상 + 둘러앉는 플라스틱 의자
   boardStand(); // 📝 게시판
   pyeongsang(4.6, 11.4, 5.2, 3.0); plasticChair(3.8, 12.4, RED, "e"); plasticChair(10.1, 12.6, BLUE, "w");
-  // 소조 코너 + 석고 포대
-  clayStand(6.6, 8.2); clayStand(8.0, 8.0); clayStand(9.5, 8.4); clayStand(11.0, 8.2); bucket(10.6, 9.6, "#9A6E4E"); bucket(11.6, 9.8, "#9A6E4E");
+  // 석고 포대 (소조 코너는 쥬 요청으로 없앴어요)
   plasterBags(12.0, 3.0); bucket(11.4, 3.4); bucket(13.4, 3.6, "#E8E4DA");
-  // 작품 좌대 (가운데 앞) + 구석에 쌓인 작품들
-  pedestal(3.4, 16.6, "figure", 18); pedestal(4.8, 17.4, "bust"); pedestal(3.6, 18.6, "abstract", 10); pedestal(5.4, 19.4, "torso", 16); chalkEasel(6.6, 16.6); chalkEasel(11.2, 16.4);
-  pedestal(10.4, 18.4, "abstract", 12); pedestal(11.8, 19.8, "bust", 14);
+  // 이젤 (가운데 작품 좌대는 쥬 요청으로 없앴어요) + 구석에 쌓인 작품들
+  chalkEasel(6.6, 16.6); chalkEasel(11.2, 16.4);
   pedestal(1.4, 24.6, "torso", 12); pedestal(2.6, 25.0, "bust", 10); pedestal(13.6, 24.6, "figure", 20); pedestal(12.4, 25.0, "abstract", 14);
   // 쥬 졸업작품: 석고 해골 3개 + 석고 좌대 위 시멘트 두상 3개
   skeleton(10.3, 21.3, 0); skeleton(11.2, 21.3, 1); skeleton(12.1, 21.3, 2);
@@ -1437,7 +1434,7 @@ loadSheet("mungyu:jump", "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALgAAABO
   addEventListener("keydown", e => { if (e.key === "7" && myChar === "jaewon" && !/INPUT|TEXTAREA/.test(e.target.tagName)) setPose("dance"); });
 }
 /* 소조 코너: 소조 좌대를 누르면 흙으로 돌려깎기 작업 시작 */
-const CLAY_STANDS = [[6.6, 8.2], [8.0, 8.0], [9.5, 8.4], [11.0, 8.2]];
+const CLAY_STANDS = []; // 소조 코너 없앰
 function hitClay(wx, wy) { return CLAY_STANDS.some(([gx, gy]) => { const [x, y] = iso(gx + .35, gy + .35, 30); return Math.abs(wx - x) < 10 && Math.abs(wy - y) < 18; }); }
 function openClay() { draft.mat = "clay"; draft.mode = "lathe"; $("sgMode").value = "lathe"; $("sgMats").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x.dataset.k === "clay"))); $("sgName").value = ""; $("sgNote").textContent = "소조 시간! 한쪽만 그려도 빙 돌려서 흙으로 빚어져."; $("sculptDlg").showModal(); drawGrid(); }
 /* 🧽 바닥 석고 자국 긁기: 누르면 가서 쪼그려 앉아 벅벅 → 사라져요 (모두에게, 이틀 뒤 다시 생김) */
