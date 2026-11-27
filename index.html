@@ -901,6 +901,21 @@ function frontWall(gx, w) { // 앞쪽 낮은 벽 (안이 잘 보이게 낮게)
   if (w <= 0) return; addBlock(gx, N - .3, w, .3);
   addObj(gx, N - .3, w, .3, 14, () => { box(gx, N - .3, w, .3, 12, "#F4F0E6", "#E6E0D2", "#D6CEBE"); });
 }
+/* 🪜 과실은 땅보다 계단 4칸만큼 높아요: 앞·오른쪽에 시멘트 기초 + 문 앞 계단 (문에서 앞마당 쪽으로 내려가요) */
+const ENTRY = { n: 4, sd: .5, sh: 4 }; // 계단 4칸, 한 칸 깊이 .5, 높이 4
+function entranceBase() {
+  const H = ENTRY.n * ENTRY.sh, C = ["#C2BCB0", "#ABA597", "#958F82"], d = .35;
+  const plinth = (x, y, w, dd) => { if (w <= 0 || dd <= 0) return; addBlock(x, y, w, dd); addObj(x, y, w, dd, H + 4, () => { box(x, y, w, dd, H, ...C); line(...iso(x, y + dd, H - 1), ...iso(x + w, y + dd, H - 1), "#D8D2C6"); }); };
+  plinth(0, N, DOOR.x0 - .15, d); plinth(DOOR.x1 + .15, N, INX + .3 - DOOR.x1 - .15 + d, d); // 앞쪽 기초 (문 자리 빼고)
+  plinth(INX + .3, 0, d, N); // 오른쪽(벽돌벽) 기초
+  // 계단: 문에서 멀어질수록 낮아져요. 사람이 밟고 다닐 수 있게 막지 않고, 사람보다 먼저 그려요
+  const x0 = DOOR.x0 - .15, w = DOOR.x1 - DOOR.x0 + .3;
+  addObj(x0, N, w, ENTRY.n * ENTRY.sd, H + 4, () => {
+    for (let i = 0; i < ENTRY.n; i++) { const y = N + i * ENTRY.sd, h = (ENTRY.n - i) * ENTRY.sh; box(x0, y, w, ENTRY.sd, h, "#D6D0C4", "#B8B2A6", "#9E988C"); line(...iso(x0, y + ENTRY.sd, h), ...iso(x0 + w, y + ENTRY.sd, h), "#8A8478"); }
+    for (const rx of [x0 + .04, x0 + w - .08]) { const [a0, b0] = iso(rx, N + ENTRY.n * ENTRY.sd, 12), [a1, b1] = iso(rx, N, H + 12); line(a0, b0, a1, b1, "#4A4E58"); line(...iso(rx, N + ENTRY.n * ENTRY.sd), a0, b0, "#5E626C"); } // 난간
+  });
+  objs[objs.length - 1].depth = N + DOOR.x0 - 6; // 사람이 계단 위에 서 있는 것처럼 (사람보다 먼저 그림)
+}
 function doorFrame() {
   for (const x of [DOOR.x0 - .15, DOOR.x1]) { addBlock(x, N - .3, .15, .3); addObj(x, N - .3, .15, .3, 50, () => box(x, N - .3, .15, .3, 44, "#8A6A4A", "#6E5238", "#5A422C")); }
   addObj(DOOR.x0 - .15, N - .3, DOOR.x1 - DOOR.x0 + .3, .3, 52, () => box(DOOR.x0 - .15, N - .3, DOOR.x1 - DOOR.x0 + .3, .3, 4, "#9A7A5A", "#7E5E40", "#684C34", 44));
@@ -1071,7 +1086,7 @@ function buildWorld() {
   // 오른쪽 벽: 빨간 벽돌로 다 막음 (쥬 요청 — 셔터 없음)
   for (let y = 0; y < N; y += 2) brickWall(INX, y, Math.min(2, N - y));
   // 앞쪽 벽: 신발장 옆 문(입구 매트 자리)으로만 드나들어요
-  frontWall(0, DOOR.x0); frontWall(DOOR.x1, INX + .3 - DOOR.x1); doorFrame();
+  frontWall(0, DOOR.x0); frontWall(DOOR.x1, INX + .3 - DOOR.x1); doorFrame(); entranceBase(); // 입구 계단 + 기초
   // 바깥: 폴리장은 없애고 빈 야외 공간 (찻길 가로등·버스 정류장만)
   streetLight(OUTX + .5, 3.6); streetLight(OUTX + .5, 16.2); streetLight(OUTX + .5, 25.4); busStop(NX - .85, 6.4);
   outdoorStairs(); // 뒤쪽(위층)으로 올라가는 계단
