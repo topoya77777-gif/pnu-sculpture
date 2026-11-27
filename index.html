@@ -173,7 +173,7 @@ button { touch-action: manipulation; }
 .tabbar button[aria-pressed="true"] { background: rgba(224,87,127,.16); } .tabbar button[aria-pressed="true"] span { color: var(--accent); }
 .tabbar .dock-img { width: 32px; height: 32px; image-rendering: pixelated; }
 #tabChat { display: none; }
-#poseMenu { top: auto !important; bottom: calc(86px + env(safe-area-inset-bottom, 0px)) !important; left: 50% !important; right: auto !important; transform: translateX(-50%); z-index: 31; flex-direction: row; flex-wrap: wrap; justify-content: center; max-width: min(520px, calc(100vw - 20px)); }
+#gameMenu, #poseMenu { top: auto !important; bottom: calc(86px + env(safe-area-inset-bottom, 0px)) !important; left: 50% !important; right: auto !important; transform: translateX(-50%); z-index: 31; flex-direction: row; flex-wrap: wrap; justify-content: center; max-width: min(520px, calc(100vw - 20px)); }
 .car-btn { bottom: calc(86px + env(safe-area-inset-bottom, 0px)) !important; }
 .hud .brand { pointer-events: auto; cursor: pointer; }
 .wd-tabs { display: flex; gap: 6px; margin: 0 0 10px; }
@@ -204,10 +204,11 @@ button { touch-action: manipulation; }
       <button class="hud-btn" type="button" id="chatToggle" aria-expanded="true" aria-controls="chat">💬 채팅</button>
     </div>
     <div class="menu" id="poseMenu" hidden></div>
+    <div class="menu" id="gameMenu" hidden aria-label="게임하기"><button type="button" id="gmBell">🔔 종치기</button><button type="button" id="gmScrape">🧽 석고 긁기 🪙3~8</button><button type="button" id="gmPick">🗑️ 쓰레기 줍기</button><button type="button" id="gmDump">♻️ 쓰레기 버리기 🪙개당 3</button><button type="button" id="gmMop">🪣 대걸레 빨기 🪙4</button><button type="button" id="gmPoly">🟡 폴리 사포질 🪙5</button></div>
     <button type="button" id="carBtn" class="car-btn" hidden>🚗 내리기</button>
     <div class="menu" id="outfitMenu" hidden aria-label="옷 갈아입기"></div>
     <div class="menu work-menu" id="workMenu" hidden><div id="workInfo" class="work-info"></div><button type="button" id="workLike" class="work-like" aria-pressed="false">🤍 좋아요 0</button><div id="workCmts" class="work-cmts"></div><form id="workCmtForm" class="work-cmt-form"><input id="workCmtIn" maxlength="80" autocomplete="off" placeholder="댓글 달기"><button type="submit">등록</button></form><button type="button" id="workMove">✋ 내 작품 옮기기</button><button type="button" id="workDel">🔨 내 작품 치우기</button><button type="button" id="workClose">닫기</button></div>
-    <div class="help" id="help">방향키·바닥 클릭 걷기 · 의자·평상 누르면 앉기 · 락커 누르면 옷 갈아입기 · 1~4 자세 · Enter 채팅</div>
+    <div class="help" id="help">방향키·바닥 클릭 걷기 · 의자·평상 누르면 앉기 · 등나무 테이블 누르면 종치기 · 1~6 자세 · 0 담배 · Enter 채팅</div>
   </div>
   <aside class="chat" id="chat" aria-label="채팅">
     <div class="chat-top"><button type="button" id="chatClose" aria-label="채팅 닫기">✕</button><h2>부산대 조소과 수다방</h2><div class="online" id="online" aria-live="polite"></div></div>
@@ -222,9 +223,10 @@ button { touch-action: manipulation; }
   </aside>
 </div>
 <nav class="tabbar" aria-label="메뉴">
-  <button type="button" id="tabOutfit" title="옷장: 캐릭터 · 옷 · 꾸미기">👗<span>옷장</span></button>
+  <button type="button" id="tabOutfit" title="캐릭터 고르기">👤<span>캐릭터</span></button>
   <button type="button" id="tabSculpt" title="작품 만들기">🗿<span>작품</span></button>
   <button type="button" id="tabBoard" title="게시판">📌<span>게시판</span></button>
+  <button type="button" id="tabGame" title="게임하기" aria-pressed="false">🎮<span>게임</span></button>
   <button type="button" id="tabPose" title="자세" aria-pressed="false">🧍<span>자세</span></button>
   <button type="button" id="tabChar" hidden></button>
   <button type="button" id="tabChat" aria-expanded="false" aria-controls="chat">💬<span>채팅</span><b id="chatBadge" class="badge" hidden></b></button>
@@ -237,7 +239,7 @@ button { touch-action: manipulation; }
 </dialog>
 <dialog id="eyeDlg" class="sculpt" aria-labelledby="eyeTitle">
   <h3 id="eyeTitle">👗 옷장</h3>
-  <div class="wd-tabs" id="wdTabs" role="tablist"><button type="button" data-t="char" role="tab">👤 캐릭터</button><button type="button" data-t="outfit" role="tab">👕 옷</button><button type="button" data-t="eye" role="tab">👀 눈</button></div>
+  <div class="wd-tabs" id="wdTabs" role="tablist" hidden style="display:none"><button type="button" data-t="char" role="tab">👤 캐릭터</button></div>
   <p id="eyeNote"></p>
   <div class="eye-list" id="eyeList"></div>
   <div class="sg-row" style="justify-content:flex-end;margin-top:10px"><button type="button" id="eyeClose">닫기</button></div>
@@ -276,8 +278,9 @@ button { touch-action: manipulation; }
   <canvas id="bdCanvas" width="480" height="300" aria-label="게시판 (그리는 곳)"></canvas>
   <div class="note" id="bdNote"></div>
   <div class="sg-row end">
-    <span id="bdConfirm" class="bd-confirm" hidden>게시판을 다 지울까? <button type="button" id="bdClearYes">다 지우기</button><button type="button" id="bdClearNo">아니</button></span>
-    <button type="button" id="bdUndo">↩ 내 마지막 것 지우기</button><button type="button" id="bdClear">전체 지우기</button><button type="button" class="send" id="bdClose">닫기</button>
+    <span id="bdConfirm" class="bd-confirm" hidden>지금 판을 넘기고 새 판을 펼까? (지금 것은 '이전'에서 볼 수 있어) <button type="button" id="bdClearYes">새 판</button><button type="button" id="bdClearNo">아니</button></span>
+    <button type="button" id="bdPrev">◀ 이전</button><span id="bdPage" style="align-self:center;font-size:.85rem;padding:0 4px"></span><button type="button" id="bdNext">다음 ▶</button>
+    <button type="button" id="bdUndo">↩ 내 마지막 것 지우기</button><button type="button" id="bdClear">🧽 다 지우기 (새 판)</button><button type="button" class="send" id="bdClose">닫기</button>
   </div>
 </dialog>
 <div class="lightbox" id="lightbox" hidden><img id="lightImg" alt="크게 보기"></div>
@@ -520,6 +523,12 @@ function aquarium(gx, gy) {
   });
 }
 
+/* 🎓 졸업작품 하나하나 (끌어서 옮기기 가능, 자리는 data/grad 에 저장) */
+const GRAD = [["ju0", "ju", 9.5, 20.4, 0], ["ju1", "ju", 10.8, 21.1, 1], ["ju2", "ju", 9.8, 22.1, 2], ["is0", "isum", 12.5, 20.8, 0], ["is1", "isum", 13.3, 22.2, 1], ["is2", "isum", 11.9, 23.0, 2]]
+  .map(([id, o, x, y, v]) => ({ id, o, x, y, v, grad: true, sz: .7, name: o === "ju" ? "쥬 졸업작품" : "이섬 졸업작품" }));
+function hitGrad(wx, wy) { let best = null, bd = 16; for (const p of GRAD) { const [x, y] = iso(p.x + .35, p.y + .35, 14), d = Math.hypot(wx - x, (wy - y) * .7); if (d < bd) { bd = d; best = p; } } return best; }
+function startGrad() { if (!db) return; db.collection("grad").orderBy("t", "desc").limit(30).onSnapshot(snap => { let ch = false; snap.docs.forEach(d => { const v = d.data(), p = GRAD.find(q => q.id === d.id); if (p && v && typeof v.x === "number" && (p.x !== v.x || p.y !== v.y)) { p.x = v.x; p.y = v.y; ch = true; } }); if (ch) buildWorld(); }, () => {}); }
+setTimeout(function sg() { if (db) startGrad(); else if (window.claude) setTimeout(sg, 1500); }, 1500);
 /* ---------- 부산대 조소과 과실 + 야외 폴리장 ---------- */
 const INX = 16; // 이 선(gx=16)부터 바깥(폴리장)
 const DEPTS = [
@@ -689,7 +698,16 @@ function wisteriaYard() {
   // 지붕 아래: 二자로 마주 보는 벤치 2개 + 가운데 나무 테이블 (진한 우드)
   const cx = (x0 + x1) / 2, L = 4.4, ly0 = (y0 + y1) / 2 - L / 2; // 벤치·테이블 크기는 그대로
   bench(cx - 1.75, ly0, L); woodTable(cx - .7, ly0 + .1, 1.4, L - .2); bench(cx + 1.2, ly0, L);
+  BELL_TABLE = { x: cx - .7, y: ly0 + .1, w: 1.4, d: L - .2 };
+  const bx = cx, by = ly0 + L / 2; // 🔔 테이블 위 종 + 카드 더미 (누르면 종치기 게임)
+  addObj(bx - .3, by - .3, .6, .6, 24, () => {
+    for (const [dx, dy, col] of [[-.45, -.9, "#F2F2EE"], [.15, .7, "#A8774E"]]) topQuad(bx + dx, by + dy, bx + dx + .3, by + dy + .4, 13.5, col);
+    const [x, y] = iso(bx, by, 13); g.fillStyle = "#6A4A1A"; g.fillRect(Math.round(x) - 5, Math.round(y) - 2, 10, 3);
+    g.fillStyle = "#F2C230"; g.fillRect(Math.round(x) - 4, Math.round(y) - 7, 8, 5); g.fillRect(Math.round(x) - 3, Math.round(y) - 9, 6, 2);
+    g.fillStyle = "#FFF4B0"; g.fillRect(Math.round(x) - 3, Math.round(y) - 7, 2, 3); g.fillStyle = "#3A2616"; g.fillRect(Math.round(x) - 1, Math.round(y) - 11, 2, 2);
+  });
 }
+let BELL_TABLE = null;
 function wisteriaRoof() { // 사람 위로 그려요 (살짝 비치게)
   const { x0, y0, x1, y1, H } = WIST; let sd = 4242; const r = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
   for (const x of [x0 + .1, x1 - .15]) box(x, y0 - .1, .12, y1 - y0 + .2, 2, "#9A7450", "#7E5C3C", "#664A30", H); // 들보 (긴 쪽)
@@ -1098,7 +1116,7 @@ function lockers(gx, gy) {
   });
 }
 /* 옷: 평상복 / 방진복 / 작업복(점프수트). 그림이 따로 없어서 몸 부분 색을 바꿔 칠해요 */
-const OUTFITS = { normal: { name: "👕 평상복" }, dust: { name: "🥼 방진복", c: [244, 244, 240] }, jump: { name: "🧰 작업복 (점프수트)", c: [64, 84, 132] } };
+const OUTFITS = { normal: { name: "👕 평상복" } }; // 방진복·작업복은 뺐어요 (쥬 요청)
 let myOutfit = (() => { try { const o = localStorage.getItem("mc-outfit"); return OUTFITS[o] ? o : "normal"; } catch { return "normal"; } })();
 const outfitCache = new Map();
 function framesFor(sheet, outfit = "normal") {
@@ -1135,6 +1153,9 @@ const CHARS = {
   mungyu: { name: "테스트 문규", sheet: "mungyu", color: "#6a8a6a", homeTag: "mungyu" },
   jeonghye: { name: "테스트 정혜", sheet: "jeonghye", color: "#b06a8a", homeTag: "jeonghye" },
 };
+// 🗄️ 테스트 캐릭터(문규·정혜)는 과실에서 뺐어요 (쥬 요청). 그림·설정 데이터는 여기 남겨둬요 — 다시 쓰려면 이 두 줄만 지우면 돼요
+const RETIRED_CHARS = { mungyu: CHARS.mungyu, jeonghye: CHARS.jeonghye };
+delete CHARS.mungyu; delete CHARS.jeonghye;
 let fridgeUntil = 0;
 function buildWorld() {
   objs = []; blocks = []; SEATS = [];
@@ -1155,15 +1176,15 @@ function buildWorld() {
   wallShelf(.05, 14.6, .45, 9);
   // 가운데: 노란 장판 평상 + 둘러앉는 플라스틱 의자
   boardStand(); // 📝 게시판
-  pyeongsang(4.6, 11.4, 5.2, 3.0, ["mungyu", "ju", "isum", "hyerin", "hyuna", "najeong", "jaewon", "jeonghye"]); plasticChair(3.8, 12.4, RED, "e"); plasticChair(10.1, 12.6, BLUE, "w"); // 🟨 모여 앉는 곳
+  pyeongsang(4.6, 11.4, 5.2, 3.0, ["ju", "isum", "hyerin", "hyuna", "najeong", "jaewon"]); plasticChair(3.8, 12.4, RED, "e"); plasticChair(10.1, 12.6, BLUE, "w"); // 🟨 모여 앉는 곳
   // 석고 포대 (소조 코너는 쥬 요청으로 없앴어요)
   plasterBags(12.8, 4.4); bucket(12.3, 5.6); bucket(14.3, 5.4, "#E8E4DA");
   // 이젤 (가운데 작품 좌대는 쥬 요청으로 없앴어요) + 구석에 쌓인 작품들
   chalkEasel(6.6, 16.6); chalkEasel(11.2, 16.4);
   pedestal(1.4, 24.4, "torso", 12); pedestal(2.6, 24.8, "bust", 10); pedestal(5.8, 24.4, "figure", 20); pedestal(7.0, 24.8, "abstract", 14); // (문 자리 비우려고 왼쪽으로)
   // 졸업작품: 쥬 석고 해골 3개 + 이섬 시멘트 사람 형상(테이프 칭칭) 3개 — 일자로 말고 자연스럽게 흩어 놓기
-  skeleton(9.5, 20.4, 0); skeleton(10.8, 21.1, 1); skeleton(9.8, 22.1, 2);
-  cementBust(12.5, 20.8, 0); cementBust(13.3, 22.2, 1); cementBust(11.9, 23.0, 2);
+  for (const p of GRAD) (p.o === "ju" ? skeleton : cementBust)(p.x, p.y, p.v); // 끌어서 옮길 수 있어요 (쥬 것은 쥬만, 이섬 것은 이섬만)
+  for (const [i, o] of [[3, "ju"], [4, "isum"]]) { const ps = GRAD.filter(p => p.o === o); if (ps.length) DEPTS[i].at = [ps.reduce((a, p) => a + p.x, 0) / ps.length + .6, Math.min(...ps.map(p => p.y)) + .3, DEPTS[i].at[2]]; } // 이름표도 따라가요
   boxes(13.0, 6.2); bin(5.6, 2.6, "#4FA040"); // (입구 쪽 파란 통 자리는 분리수거함으로 바뀜)
   // 입구 오른쪽 신발장
   shoeRack(DOOR.x0 - 1.75, 24.9); // 신발장: 문 바로 왼쪽
@@ -1176,6 +1197,7 @@ function buildWorld() {
   outdoorStairs(); // 뒤쪽(위층)으로 올라가는 계단
   wisteriaYard(); // 🌸 앞마당 등나무 쉼터 + 벤치
   stoneRoom(); // 🪨 석조실 (하얀 천막)
+  polyStation(); // 🟡 석조실 아래 야외: 폴리 작품 사포질 (누르면 사포 게임)
   WORKS.forEach(workObj); extraProps(); // 친구들이 만든 작품 + 고량주·분리수거함
   if (!bg) { bg = document.createElement("canvas"); bg.width = WWID; bg.height = WHEI; const q = bg.getContext("2d"); const prev = G; G = q; drawRoom(); G = prev; }
   objs.forEach(bake);
@@ -1664,7 +1686,7 @@ function hitChair(wx, wy) {
 /* 바닥에 앉기 */
 { const _setPose = setPose; setPose = p => { if (p === "floor") { if (me.seat) standUp(me); me.path = []; me.wantSeat = null; me.pose = "sit"; return; } _setPose(p); }; }
 function hitMe(wx, wy) { if (!myChar) return false; const [x, y] = iso(me.x, me.y); return Math.abs(wx - x) < 9 && wy > y - (sprH(CHARS[myChar].sheet) || 36) && wy < y + 3; }/* 👕 박수아 티셔츠: 몸통 자리에 티셔츠 그림(캐릭터-레퍼런스/박수아 티셔츠.png)을 입혀요 */
-OUTFITS.tee = { name: "👕 박수아 티셔츠" };
+// OUTFITS.tee = { name: "👕 박수아 티셔츠" }; // 쥬 요청으로 뺐어요 (그림 코드는 남겨둠)
 const teeImg = new Image(); teeImg.onload = () => outfitCache.clear(); teeImg.src = "data:image/png;base64,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";
 function teeFrames(sheet) {
   const base = SHEETS[sheet]; if (!base || !teeImg.complete || !teeImg.naturalWidth) return base;
@@ -2113,7 +2135,7 @@ async function trDrop() {
     if (!inBin(o.x, o.y - 20)) { o.x = trBagPos[0]; o.y = trBagPos[1]; return; }
     o.got = true; trDone = true; const n = carried; carried = 0; updBag(); dumpedTotal += n;
     $("trNote").textContent = n >= BAG_MAX ? `한 봉지 꽉꽉 버렸다 ✨ (${n}개)` : `슛~ ${n}개 버렸다!`;
-    setTimeout(() => { $("trDlg").close(); bubble(myChar, n >= BAG_MAX ? `한 봉지 꽉꽉 버렸다 🗑️✨` : `슛~ 🗑️ ${n}개 버렸다`); setTimeout(() => addPts(n + (n >= BAG_MAX ? 3 : 0), n >= BAG_MAX ? `쓰레기 ${n}개 +${n} · 꽉 찬 봉투 +3` : `쓰레기 ${n}개 +${n}`), 700); }, 900);
+    setTimeout(() => { $("trDlg").close(); bubble(myChar, n >= BAG_MAX ? `한 봉지 꽉꽉 버렸다 🗑️✨` : `슛~ 🗑️ ${n}개 버렸다`); setTimeout(() => addPts(n * 3 + (n >= BAG_MAX ? 6 : 0), n >= BAG_MAX ? `쓰레기 ${n}개 +${n * 3} · 꽉 찬 봉투 +6` : `쓰레기 ${n}개 +${n * 3}`), 700); }, 900);
   }
 }
 function updTrCount() { $("trCount").textContent = trMode === "pick" ? `봉투 ${carried}/${BAG_MAX}` : `${carried}개`; }
@@ -2379,18 +2401,29 @@ ACTION_COST.arrest = 5;
 const BW = 480, BH = 300, BOARD = { x: 10.6, y: 13.4, w: 2.4 }; // 평상 오른쪽에 서 있는 이동식 화이트보드
 let STROKES = [];
 const boardCv = document.createElement("canvas"); boardCv.width = BW; boardCv.height = BH;
+/* 게시판 판(페이지): "다 지우기" = 새 판을 펴요. 예전 판은 ◀ 이전 으로 볼 수 있어요 (보기만) */
+let bdView = null; // null = 지금 판
+const curPage = () => STROKES.reduce((m, s) => Math.max(m, s.pg || 0), 0);
+const viewPage = () => bdView === null ? curPage() : bdView;
+function updBdPage() { const c = curPage(), v = viewPage(); if (!$("bdPage")) return; $("bdPage").textContent = v === c ? `지금 판 (${c + 1}번째)` : `${v + 1}번째 판 (예전 것 · 보기만)`; $("bdPrev").disabled = v <= 0; $("bdNext").disabled = v >= c; }
 function paintBoard() {
   const q = boardCv.getContext("2d");
   q.fillStyle = "#FBFBF6"; q.fillRect(0, 0, BW, BH);
   q.lineCap = "round"; q.lineJoin = "round";
+  const pg = curPage(); drawStrokes(q, pg);
+  if (live && live.pts.length >= 2 && bdView === null) { q.strokeStyle = live.col; q.lineWidth = live.w; q.beginPath(); q.moveTo(live.pts[0], live.pts[1]); for (let i = 2; i < live.pts.length; i += 2) q.lineTo(live.pts[i], live.pts[i + 1]); q.stroke(); }
+  const v = $("bdCanvas"); if (v) { const vq = v.getContext("2d"); vq.clearRect(0, 0, BW, BH); if (viewPage() === pg) vq.drawImage(boardCv, 0, 0); else { vq.fillStyle = "#F2EFE4"; vq.fillRect(0, 0, BW, BH); vq.lineCap = "round"; vq.lineJoin = "round"; drawStrokes(vq, viewPage()); } }
+  updBdPage();
+}
+function drawStrokes(q, pg) {
   for (const s of STROKES) {
+    if ((s.pg || 0) !== pg || s.k === "page") continue;
+    if (s.k === "line" && s.col === "#FBFBF6" && q.canvas !== boardCv) { const p = s.pts || []; if (p.length < 2) continue; q.strokeStyle = "#F2EFE4"; q.lineWidth = s.w || 3; q.beginPath(); q.moveTo(p[0], p[1]); for (let i = 2; i < p.length; i += 2) q.lineTo(p[i], p[i + 1]); q.stroke(); continue; }
     if (s.k === "text") { q.fillStyle = s.col; q.font = `700 ${s.size || 22}px "Noto Sans KR", sans-serif`; q.textBaseline = "top"; String(s.s || "").split("\n").forEach((ln, i) => q.fillText(ln, s.x, s.y + i * (s.size || 22) * 1.2)); continue; }
     const p = s.pts || []; if (p.length < 2) continue;
     q.strokeStyle = s.col; q.lineWidth = s.w || 3; q.beginPath(); q.moveTo(p[0], p[1]);
     if (p.length === 2) q.lineTo(p[0] + .1, p[1]); for (let i = 2; i < p.length; i += 2) q.lineTo(p[i], p[i + 1]); q.stroke();
   }
-  if (live && live.pts.length >= 2) { q.strokeStyle = live.col; q.lineWidth = live.w; q.beginPath(); q.moveTo(live.pts[0], live.pts[1]); for (let i = 2; i < live.pts.length; i += 2) q.lineTo(live.pts[i], live.pts[i + 1]); q.stroke(); }
-  const v = $("bdCanvas"); if (v) { const vq = v.getContext("2d"); vq.clearRect(0, 0, BW, BH); vq.drawImage(boardCv, 0, 0); }
 }
 function boardStand() { // 다리 + 틀 (그림은 매 프레임 따로 비춰요)
   const { x, y, w } = BOARD; addBlock(x, y - .1, w, .4);
@@ -2412,27 +2445,26 @@ function hitBoard(wx, wy) { const [cx, cy] = iso(BOARD.x + BOARD.w / 2, BOARD.y 
 let tool = "pen", penCol = "#2A2A2E", penW = 3, live = null;
 function bdPoint(e) { const v = $("bdCanvas"), r = v.getBoundingClientRect(); return [Math.round((e.clientX - r.left) / r.width * BW), Math.round((e.clientY - r.top) / r.height * BH)]; }
 async function addStroke(s) {
-  s.t = Date.now(); s.by = myId || null; s.c = myChar || null;
+  s.t = Date.now(); s.by = myId || null; s.c = myChar || null; if (s.pg === undefined) s.pg = curPage();
   if (!db) { STROKES.push({ ...s, id: "l" + s.t }); paintBoard(); return; }
   try { await db.collection("board").add(s); } catch (e) { $("bdNote").textContent = e && e.code === "invalid_argument" ? "보기 전용이라 그릴 수 없어." : "저장이 안 됐어. 다시 해봐."; }
-  if (STROKES.length > 450) { const old = STROKES.slice(0, 40); for (const o of old) { try { await db.doc("board/" + o.id).delete(); } catch {} } }
 }
 function startBoard() {
-  if (!db) return;
-  db.collection("board").orderBy("t", "asc").limit(500).onSnapshot(snap => { STROKES = snap.docs.map(d => ({ id: d.id, ...d.data() })); paintBoard(); }, () => {});
+  if (!db) return; // 예전 판도 볼 수 있게 최근 2000개까지 가져와요
+  db.collection("board").orderBy("t", "desc").limit(2000).onSnapshot(snap => { STROKES = snap.docs.map(d => ({ id: d.id, ...d.data() })).reverse(); paintBoard(); }, () => {});
 }
 async function undoMine() {
   const mine = [...STROKES].reverse().find(s => (s.by && s.by === myId) || (!s.by && s.c === myChar)); if (!mine) return;
   if (db && !String(mine.id).startsWith("l")) { try { await db.doc("board/" + mine.id).delete(); } catch {} } else { STROKES = STROKES.filter(s => s !== mine); paintBoard(); }
 }
-async function clearBoard() {
-  const all = STROKES.slice(); STROKES = []; paintBoard();
-  if (db) for (const s of all) { try { await db.doc("board/" + s.id).delete(); } catch {} }
+async function clearBoard() { // 지우는 대신 새 판을 펴요 (누구나 가능, 예전 판은 남아요)
+  bdView = null; await addStroke({ k: "page", pg: curPage() + 1 }); $("bdNote").textContent = "새 판을 폈어! 예전 것은 ◀ 이전 으로 볼 수 있어.";
 }
 {
   const v = $("bdCanvas");
   v.addEventListener("pointerdown", e => {
     e.preventDefault(); if (!myChar) { showPicker(); return; }
+    if (bdView !== null && bdView !== curPage()) { $("bdNote").textContent = "예전 판은 보기만 할 수 있어. 다음 ▶ 으로 지금 판에 가서 그려줘."; return; }
     const [x, y] = bdPoint(e);
     if (tool === "text") { const t = $("bdText").value.trim(); if (!t) { $("bdNote").textContent = "위 칸에 글을 먼저 쓰고 게시판을 눌러줘."; return; } addStroke({ k: "text", s: t.slice(0, 120), x, y, col: penCol, size: penW > 4 ? 30 : 20 }); $("bdText").value = ""; return; }
     v.setPointerCapture(e.pointerId); live = { k: "line", col: tool === "erase" ? "#FBFBF6" : penCol, w: tool === "erase" ? 18 : penW, pts: [x, y] }; paintBoard();
@@ -2446,12 +2478,14 @@ async function clearBoard() {
   $("bdThin").onclick = () => { penW = 3; $("bdThin").setAttribute("aria-pressed", "true"); $("bdThick").setAttribute("aria-pressed", "false"); };
   $("bdThick").onclick = () => { penW = 8; $("bdThick").setAttribute("aria-pressed", "true"); $("bdThin").setAttribute("aria-pressed", "false"); };
   $("bdUndo").onclick = () => undoMine();
+  $("bdPrev").onclick = () => { bdView = Math.max(0, viewPage() - 1); paintBoard(); };
+  $("bdNext").onclick = () => { const v = viewPage() + 1; bdView = v >= curPage() ? null : v; paintBoard(); };
   $("bdClear").onclick = () => { $("bdConfirm").hidden = false; };
   $("bdClearNo").onclick = () => { $("bdConfirm").hidden = true; };
   $("bdClearYes").onclick = () => { $("bdConfirm").hidden = true; clearBoard(); };
   $("bdClose").onclick = () => $("boardDlg").close();
   $("boardBtn").onclick = () => openBoard();
-  window.openBoard = () => { $("bdNote").textContent = ""; $("boardDlg").showModal(); paintBoard(); };
+  window.openBoard = () => { $("bdNote").textContent = ""; bdView = null; $("boardDlg").showModal(); paintBoard(); };
 }
 paintBoard();
 
@@ -2660,7 +2694,7 @@ function openEyeDlg() {
 function openWardrobe(tab = "char") {
   const dlg = $("eyeDlg"), box = $("eyeList"), note = $("eyeNote");
   $("wdTabs").querySelectorAll("button").forEach(b => { b.setAttribute("aria-selected", String(b.dataset.t === tab)); b.onclick = () => openWardrobe(b.dataset.t); });
-  if (tab === "eye") { openEyeDlg(); return; }
+  tab = "char"; // 옷·눈 탭은 뺐어요. 캐릭터 고르기만
   box.innerHTML = "";
   const opt = (label, sub, pressed, disabled, onClick, thumb) => {
     const b = document.createElement("button"); b.type = "button"; b.className = "eye-opt wd-opt"; b.disabled = disabled; b.setAttribute("aria-pressed", String(pressed));
@@ -2841,15 +2875,214 @@ const vehRiderH = vid => (VEH[vid] ? VEH[vid].riderH : 9);
 const vehHides = vid => !!(VEH[vid] && VEH[vid].hide);
 function updCarBtn() { const b = $("carBtn"); if (b) b.hidden = !(me.cs >= 0); }
 { const sp = setPose; setPose = p => { if (me.cs >= 0) return; sp(p); }; } // 차 안에서는 자세 그대로
+/* 🔔 조소과 종치기: 등나무 테이블을 누르면 열려요. 펼쳐진 카드 중 한 재료가 딱 5개면 종! (나 + 컴퓨터 친구 3명) */
+const BELL_MATS = [["석고", "#F4F4EE", "#9A9A90"], ["흙", "#B07A4E", "#6E4628"], ["돌", "#A7A39A", "#5E5A52"], ["브론즈", "#D08A3A", "#7A4A14"]];
+let bellG = null;
+const bellDlg = document.createElement("dialog"); bellDlg.id = "bellDlg"; bellDlg.className = "bell-dlg";
+bellDlg.innerHTML = `<style>
+.bell-dlg{border:0;border-radius:18px;padding:16px;width:min(560px,94vw);background:#3E5A3A;color:#fff;font-family:inherit}
+.bell-dlg::backdrop{background:rgba(0,0,0,.45)}
+.bell-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.bell-top b{font-size:1.1rem}
+.bell-top button{border:0;border-radius:10px;padding:6px 10px;background:#ffffff22;color:#fff;font:inherit;cursor:pointer}
+.bell-board{display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:auto auto auto;gap:8px;align-items:center;justify-items:center}
+.bell-seat{display:flex;flex-direction:column;align-items:center;gap:4px;min-height:118px}.bell-seat.turn .bell-name{background:#F2C230;color:#3a2a00}.bell-seat.out{opacity:.35}
+.bell-name{font-size:.8rem;padding:2px 8px;border-radius:99px;background:#ffffff26;white-space:nowrap}
+.bell-card{width:64px;height:84px;border-radius:9px;background:#FBF7EE;border:2px solid #2a2a2a;display:grid;grid-template-columns:1fr 1fr;align-content:center;justify-items:center;gap:3px;padding:6px;box-sizing:border-box}
+.bell-card.back{background:repeating-linear-gradient(45deg,#C8554A 0 6px,#B04438 6px 12px)}.bell-card.none{background:transparent;border:2px dashed #ffffff55}
+.bell-dot{width:16px;height:16px;border-radius:4px;border:2px solid}.bell-card .one{grid-column:1/3}
+.bell-btn{width:104px;height:104px;border-radius:50%;border:0;background:radial-gradient(circle at 35% 30%,#FFF4B0,#F2C230 45%,#B8860B);box-shadow:0 6px 0 #6A4A1A;font-size:2.4rem;cursor:pointer}
+.bell-btn:active{transform:translateY(4px);box-shadow:0 2px 0 #6A4A1A}
+.bell-msg{text-align:center;min-height:2.6em;margin-top:8px;font-size:.95rem}.bell-help{font-size:.78rem;opacity:.8;text-align:center}
+.bell-start[hidden]{display:none}.bell-start{display:block;margin:8px auto 0;border:0;border-radius:12px;padding:10px 22px;background:#F2C230;color:#3a2a00;font:inherit;font-weight:700;cursor:pointer}
+</style>
+<div class="bell-top"><b>🔔 조소과 종치기</b><button type="button" id="bellClose">닫기</button></div>
+<div class="bell-board" id="bellBoard"></div>
+<div class="bell-msg" id="bellMsg" aria-live="polite"></div>
+<div class="bell-help">펼쳐진 카드에서 <b>한 재료가 딱 5개</b>가 되면 종을 쳐! (스페이스바도 돼) · 틀리면 모두에게 1장씩 줘야 해<br>이기면 🦴 펫 간식을 받아 (펫은 곧 나와요)</div>
+<button type="button" class="bell-start" id="bellStart">시작하기</button>`;
+document.body.appendChild(bellDlg);
+function bellCardEl(card, back) {
+  const d = document.createElement("div"); d.className = "bell-card" + (back ? " back" : card ? "" : " none");
+  if (card && !back) { const [nm, f, s] = BELL_MATS[card.m]; for (let i = 0; i < card.n; i++) { const e = document.createElement("i"); e.className = "bell-dot" + (card.n % 2 && i === card.n - 1 ? " one" : ""); e.style.background = f; e.style.borderColor = s; d.appendChild(e); } d.title = nm + " " + card.n; d.setAttribute("aria-label", nm + " " + card.n + "개"); }
+  return d;
+}
+function bellRender() {
+  const G2 = bellG, b = $("bellBoard"); b.innerHTML = ""; if (!G2) return;
+  const pos = [[2, 3], [1, 2], [2, 1], [3, 2]]; // 나(아래) · 왼쪽 · 위 · 오른쪽
+  G2.pl.forEach((p, i) => {
+    const s = document.createElement("div"); s.className = "bell-seat" + (G2.turn === i && !G2.over ? " turn" : "") + (p.out ? " out" : "");
+    s.style.gridColumn = pos[i][0]; s.style.gridRow = pos[i][1];
+    const n = document.createElement("div"); n.className = "bell-name"; n.textContent = `${p.name} · 🂠${p.deck.length}`;
+    const cards = document.createElement("div"); cards.style.display = "flex"; cards.style.gap = "4px";
+    cards.append(bellCardEl(null, p.deck.length > 0), bellCardEl(p.pile[p.pile.length - 1] || null, false));
+    s.append(n, cards); b.appendChild(s);
+  });
+  const mid = document.createElement("div"); mid.style.gridColumn = 2; mid.style.gridRow = 2;
+  const btn = document.createElement("button"); btn.type = "button"; btn.className = "bell-btn"; btn.textContent = "🔔"; btn.setAttribute("aria-label", "종 치기"); btn.onclick = () => bellRing(0);
+  mid.appendChild(btn); b.appendChild(mid);
+}
+const bellMsg = t => { $("bellMsg").textContent = t; };
+function bellFive() { const sum = [0, 0, 0, 0]; for (const p of bellG.pl) { const c = p.pile[p.pile.length - 1]; if (c && !p.out) sum[c.m] += c.n; } return sum.findIndex(v => v === 5); }
+function bellStart() {
+  const deck = []; for (let m = 0; m < 4; m++) for (const [n, k] of [[1, 5], [2, 3], [3, 3], [4, 2], [5, 1]]) for (let i = 0; i < k; i++) deck.push({ m, n });
+  for (let i = deck.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [deck[i], deck[j]] = [deck[j], deck[i]]; }
+  const others = Object.keys(CHARS).filter(id => id !== myChar).sort(() => Math.random() - .5).slice(0, 3);
+  const pl = [{ name: (CHARS[myChar] || {}).name || "나", me: true }, ...others.map(id => ({ name: CHARS[id].name, speed: 650 + Math.random() * 700 }))];
+  pl.forEach((p, i) => { p.deck = deck.filter((_, k) => k % 4 === i); p.pile = []; p.out = false; });
+  clearTimeout(bellG && bellG.tm); bellG = { pl, turn: 0, lock: false, over: false, tm: 0, flipN: 0, botT: [] };
+  $("bellStart").hidden = true; bellMsg("시작! 카드가 한 장씩 펼쳐져…"); bellRender(); bellG.tm = setTimeout(bellFlip, 1100);
+}
+function bellNextTurn() { const G2 = bellG; for (let k = 1; k <= 4; k++) { const i = (G2.turn + k) % 4; if (!G2.pl[i].out) { G2.turn = i; return; } } }
+function bellFlip() {
+  const G2 = bellG; if (!G2 || G2.over || G2.lock) return;
+  const p = G2.pl[G2.turn];
+  if (!p.deck.length) { p.out = true; if (bellCheckEnd()) return; bellNextTurn(); bellRender(); G2.tm = setTimeout(bellFlip, 500); return; }
+  p.pile.push(p.deck.shift()); G2.flipN++; bellRender();
+  G2.botT.forEach(clearTimeout); G2.botT = [];
+  const five = bellFive();
+  G2.pl.forEach((b, i) => { if (b.me || b.out) return; // 컴퓨터 친구: 맞으면 쳐요, 가끔 실수도 해요
+    if (five >= 0) G2.botT.push(setTimeout(() => bellRing(i), b.speed + Math.random() * 500));
+    else if (Math.random() < .03) G2.botT.push(setTimeout(() => bellRing(i), 500 + Math.random() * 600)); });
+  bellNextTurn(); G2.tm = setTimeout(bellFlip, Math.max(900, 1700 - G2.flipN * 8));
+}
+function bellRing(i) {
+  const G2 = bellG; if (!G2 || G2.over || G2.lock || G2.pl[i].out) return;
+  G2.lock = true; clearTimeout(G2.tm); G2.botT.forEach(clearTimeout); G2.botT = [];
+  const p = G2.pl[i], five = bellFive();
+  if (five >= 0) {
+    const won = []; G2.pl.forEach(q => { won.push(...q.pile); q.pile = []; }); p.deck.push(...won.sort(() => Math.random() - .5)); p.out = false;
+    bellMsg(`🔔 ${p.me ? "내가" : p.name + "(이)가"} 먼저 쳤다! ${BELL_MATS[five][0]} 5개 → 카드 ${won.length}장 가져감`);
+  } else {
+    let gave = 0; G2.pl.forEach(q => { if (q !== p && !q.out && p.deck.length) { q.deck.push(p.deck.pop()); gave++; } });
+    if (!p.deck.length && !p.pile.length) p.out = true;
+    bellMsg(`❌ ${p.me ? "앗 틀렸어!" : p.name + " 헛종!"} 카드 ${gave}장을 나눠줬어`);
+  }
+  bellRender();
+  setTimeout(() => { if (bellCheckEnd()) return; G2.lock = false; if (G2.pl[G2.turn].out) bellNextTurn(); G2.tm = setTimeout(bellFlip, 600); }, 1300);
+}
+function bellCheckEnd() {
+  const G2 = bellG; G2.pl.forEach(q => { if (!q.deck.length && !q.pile.length) q.out = true; });
+  const alive = G2.pl.filter(q => !q.out), me0 = G2.pl[0];
+  if (me0.out || alive.length <= 1) {
+    G2.over = true; clearTimeout(G2.tm); G2.botT.forEach(clearTimeout);
+    const winner = alive.length === 1 ? alive[0] : G2.pl.slice().sort((a, b) => (b.deck.length + b.pile.length) - (a.deck.length + a.pile.length))[0];
+    if (winner.me) { let t = 0; try { t = (+localStorage.getItem("mc-pet-treats") || 0) + 1; localStorage.setItem("mc-pet-treats", t); } catch {} bellMsg(`🏆 내가 이겼다! 🦴 펫 간식 +1 (모은 간식 ${t}개)`); if (myChar) bubble(myChar, "종치기 우승! 🔔🏆"); }
+    else bellMsg(`😵 ${winner.name} 우승! 다시 해볼까?`);
+    $("bellStart").textContent = "한 판 더"; $("bellStart").hidden = false; bellRender(); return true;
+  }
+  return false;
+}
+function openBell() { $("bellStart").textContent = "시작하기"; $("bellStart").hidden = false; bellG = null; $("bellBoard").innerHTML = ""; bellMsg("테이블에 둘러앉았어. 시작해볼까?"); bellDlg.showModal(); }
+function closeBell() { if (bellG) { bellG.over = true; clearTimeout(bellG.tm); bellG.botT.forEach(clearTimeout); } bellDlg.close(); }
+$("bellStart").onclick = bellStart; $("bellClose").onclick = closeBell; bellDlg.addEventListener("cancel", e => { e.preventDefault(); closeBell(); });
+bellDlg.addEventListener("keydown", e => { if (e.code === "Space") { e.preventDefault(); if (bellG && !bellG.over) bellRing(0); } });
+function hitBellTable(wx, wy) { const T = BELL_TABLE; if (!T) return false; const [gx, gy] = toGrid(wx, wy, 13); return gx > T.x - .2 && gx < T.x + T.w + .2 && gy > T.y - .2 && gy < T.y + T.d + .2; }
+function goBell() { const T = BELL_TABLE, tx = T.x - .45, ty = T.y + T.d / 2; if (Math.hypot(me.x - tx, me.y - ty) < 2.5) openBell(); else walkThen(tx, ty, () => openBell()); }
+/* 🟡 폴리 작품 사포질: 석조실 아래 야외 작업대. 울퉁불퉁한 폴리 표면을 사포로 문질러 매끈하게 → 🪙5 (2분에 한 번) */
+const POLY = { x: 21.2, y: 19.6, w: 1.4, d: 1.0 };
+function polyStation() {
+  const { x, y, w, d } = POLY; addBlock(x, y, w, d);
+  addObj(x, y, w, d, 50, () => {
+    for (const [a, b] of [[.05, .05], [w - .17, .05], [.05, d - .17], [w - .17, d - .17]]) box(x + a, y + b, .12, .12, 10, "#8A6A48", "#6E5236", "#584028");
+    box(x, y, w, d, 2, "#B08A60", "#94704A", "#7A5A3A", 10); // 나무 작업대
+    const cx = x + w / 2, cy = y + d / 2; // 폴리(FRP) 인체 토르소: 누런 레진색, 군데군데 거친 자국
+    box(cx - .25, cy - .2, .5, .4, 16, "#E8C860", "#CCAA48", "#B09034", 12);
+    box(cx - .18, cy - .14, .36, .28, 8, "#F0D470", "#D4B450", "#B89A3A", 28);
+    box(cx - .1, cy - .08, .2, .16, 6, "#F0D470", "#D4B450", "#B89A3A", 36);
+    for (const [u, v, z] of [[-.2, .2, 18], [.1, .2, 24], [-.05, .2, 32], [.15, .2, 15]]) { const [px2, py2] = iso(cx + u, cy + v, z); px(px2, py2, 2, 1, "#9A7A2A"); }
+    const [sx, sy] = iso(x + w - .2, y + d - .1, 12); px(sx - 3, sy - 2, 6, 3, "#C8553A"); px(sx - 3, sy - 2, 6, 1, "#E07A5A"); // 사포
+  });
+}
+let polyNext = 0, polyG = null;
+const polyDlg = document.createElement("dialog"); polyDlg.id = "polyDlg"; polyDlg.className = "bell-dlg"; polyDlg.style.background = "#5A5038";
+polyDlg.innerHTML = `<div class="bell-top"><b>🟡 폴리 작품 사포질</b><button type="button" id="polyClose">닫기</button></div>
+<canvas id="polyCv" width="240" height="200" style="width:100%;max-width:420px;display:block;margin:0 auto;border-radius:12px;background:#3A3424;touch-action:none;image-rendering:pixelated"></canvas>
+<div style="height:10px;border-radius:99px;background:#ffffff33;margin:10px 0 4px;overflow:hidden"><div id="polyBar" style="height:100%;width:0;background:#F0D470"></div></div>
+<div class="bell-msg" id="polyMsg" aria-live="polite"></div>`;
+document.body.appendChild(polyDlg);
+const POLY_SHAPE = (x, y) => { const nx = (x - 120) / 60, ny = (y - 40) / 150; if (y < 20 || y > 190) return false; const half = y < 70 ? 22 + Math.sqrt(Math.max(0, 1 - ((y - 45) / 26) ** 2)) * 10 : y < 90 ? 22 : 30 + (y - 90) * .35 - Math.max(0, y - 150) * .5; return Math.abs(x - 120) < half; }; // 토르소 모양
+function polyDraw() {
+  const M = polyG; if (!M) return; const q = $("polyCv").getContext("2d");
+  q.fillStyle = "#3A3424"; q.fillRect(0, 0, 240, 200);
+  for (const c of M.cells) { const r = c.hp / c.max; q.fillStyle = r > .66 ? "#B89634" : r > .33 ? "#D4B450" : r > 0 ? "#E8C860" : "#F6DC7C"; q.fillRect(c.x, c.y, 4, 4); if (c.hp > 0 && c.bump) { q.fillStyle = "#8A6E22"; q.fillRect(c.x + 1, c.y + 1, 2, 2); } }
+  q.globalAlpha = .5; q.fillStyle = "#FFF6C8"; for (const c of M.cells) if (c.hp <= 0 && (c.x + c.y) % 24 === 0) q.fillRect(c.x, c.y, 2, 4); q.globalAlpha = 1; // 매끈해진 곳 반짝
+  for (const p of M.dust) { p.x += p.vx; p.y += p.vy; p.vy += .15; p.life--; q.fillStyle = "#F4E6B0"; q.globalAlpha = Math.max(0, p.life / 30); q.fillRect(p.x, p.y, 2, 2); } q.globalAlpha = 1; M.dust = M.dust.filter(p => p.life > 0);
+  if (M.pt) { q.fillStyle = "#C8553A"; q.fillRect(M.pt[0] - 12, M.pt[1] - 8, 24, 16); q.fillStyle = "#E07A5A"; q.fillRect(M.pt[0] - 12, M.pt[1] - 8, 24, 3); } // 사포
+  if (polyDlg.open) requestAnimationFrame(polyDraw);
+}
+function openPoly() {
+  if (performance.now() < polyNext) { bubble(myChar, `폴리 아직 매끈해 ✨ (${Math.ceil((polyNext - performance.now()) / 60000)}분 뒤에 또 갈 수 있어)`); return; }
+  if (me.seat) standUp(me); me.pose = "stand";
+  const cells = []; for (let y = 20; y < 192; y += 4) for (let x = 60; x < 180; x += 4) if (POLY_SHAPE(x + 2, y + 2)) { const max = 2 + Math.floor(Math.random() * 3); cells.push({ x, y, hp: max, max, bump: Math.random() < .25 }); }
+  polyG = { cells, total: cells.reduce((a, c) => a + c.hp, 0), dust: [], pt: null, done: false };
+  $("polyMsg").textContent = "사포를 잡고 울퉁불퉁한 폴리를 쓱쓱 문질러서 매끈하게 갈아줘! (마스크 필수 😷)"; $("polyBar").style.width = "0%"; polyDlg.showModal(); requestAnimationFrame(polyDraw);
+}
+{ const c = $("polyCv"), pt = e => { const r = c.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * 240, (e.clientY - r.top) / r.height * 200]; }; let down = false, last = null;
+  const rub = p => { const M = polyG; if (!M || M.done) return; M.pt = p; if (!last) { last = p; return; } const dist = Math.hypot(p[0] - last[0], p[1] - last[1]); last = p; if (dist < 1) return;
+    for (const cl of M.cells) if (cl.hp > 0 && Math.abs(cl.x + 2 - p[0]) < 13 && Math.abs(cl.y + 2 - p[1]) < 9 && Math.random() < Math.min(.5, dist / 30)) { cl.hp--; if (Math.random() < .3) M.dust.push({ x: cl.x, y: cl.y, vx: (Math.random() - .5) * 2, vy: -1 - Math.random() * 1.5, life: 30 }); }
+    const left = M.cells.reduce((a, c2) => a + Math.max(0, c2.hp), 0) / M.total, pct = Math.round((1 - left) * 100); $("polyBar").style.width = pct + "%";
+    if (left <= .05) { M.done = true; M.cells.forEach(c2 => c2.hp = 0); $("polyMsg").textContent = "매끈매끈~ 광이 난다 ✨"; polyNext = performance.now() + 120000;
+      setTimeout(() => { polyDlg.close(); bubble(myChar, ["폴리 가루 다 마셨다 콜록 😷", "사포질 끝! 매끈매끈 ✨", "팔 빠질 것 같다…"][Math.floor(Math.random() * 3)]); setTimeout(() => addPts(5, "폴리 사포질 +5"), 600); }, 1000); } };
+  c.addEventListener("pointerdown", e => { down = true; c.setPointerCapture(e.pointerId); last = null; rub(pt(e)); });
+  c.addEventListener("pointermove", e => { if (down) rub(pt(e)); });
+  const up = () => { down = false; last = null; }; c.addEventListener("pointerup", up); c.addEventListener("pointercancel", up); }
+$("polyClose").onclick = () => polyDlg.close();
+function hitPoly(wx, wy) { const [cx, cy] = iso(POLY.x + POLY.w / 2, POLY.y + POLY.d / 2, 24); return Math.abs(wx - cx) < 20 && Math.abs(wy - cy) < 24; }
+function goPoly() { if (!myChar) return showPicker(); walkThen(POLY.x + POLY.w / 2, POLY.y + POLY.d + .6, () => openPoly()); }
+/* 🪣 대걸레 빨기: 창문 아래 개수대. ① 대걸레를 좌우로 문질러 빨고 ② 꾹꾹 짜기 → 🪙4 (3분에 한 번) */
+const MOP = { x: 8.0, y: .05, w: 4.6, d: .9 };
+let mopNext = 0, mopG = null;
+const mopDlg = document.createElement("dialog"); mopDlg.id = "mopDlg"; mopDlg.className = "bell-dlg"; mopDlg.style.background = "#3A5A6A";
+mopDlg.innerHTML = `<div class="bell-top"><b>🪣 대걸레 빨기</b><button type="button" id="mopClose">닫기</button></div>
+<canvas id="mopCv" width="320" height="220" style="width:100%;max-width:420px;display:block;margin:0 auto;border-radius:12px;background:#8A867C;touch-action:none;image-rendering:pixelated"></canvas>
+<div style="height:10px;border-radius:99px;background:#ffffff33;margin:10px 0 4px;overflow:hidden"><div id="mopBar" style="height:100%;width:0;background:#7CE0F0"></div></div>
+<div class="bell-msg" id="mopMsg" aria-live="polite"></div>
+<button type="button" class="bell-start" id="mopWring" hidden>💪 꾹 짜기</button>`;
+document.body.appendChild(mopDlg);
+function mopDraw() {
+  const q = $("mopCv").getContext("2d"), M = mopG; if (!M) return;
+  q.fillStyle = "#8A867C"; q.fillRect(0, 0, 320, 220); q.fillStyle = "#6E6A62"; q.fillRect(14, 70, 292, 140); // 시멘트 개수대
+  const dirt = 1 - M.clean, wc = [Math.round(111 + 60 * (1 - dirt)), Math.round(138 - 30 * dirt + 50 * (1 - dirt)), Math.round(152 - 50 * dirt + 60 * (1 - dirt))];
+  q.fillStyle = `rgb(${wc})`; q.fillRect(22, 92, 276, 110); // 물: 빨수록 맑아져요
+  q.fillStyle = "#9AA0A8"; q.fillRect(150, 10, 10, 40); q.fillRect(150, 10, 40, 10); q.fillStyle = "#C8CCD2"; q.fillRect(184, 20, 8, 10); // 수도꼭지
+  if (M.phase === 1) { q.fillStyle = "#A8D8F0"; for (let i = 0; i < 4; i++) q.fillRect(186, 32 + ((performance.now() / 40 + i * 14) % 56), 4, 8); }
+  const mx = M.mx, wr = M.phase === 2 ? M.wring : 0; // 대걸레
+  q.fillStyle = "#C89A5A"; q.fillRect(mx - 3, 0, 6, 110 - wr * 2);
+  const head = [Math.round(232 - 150 * dirt), Math.round(228 - 150 * dirt), Math.round(214 - 150 * dirt)];
+  q.fillStyle = `rgb(${head})`; for (let i = 0; i < 9; i++) { const sw = M.phase === 1 ? Math.sin(performance.now() / 120 + i) * 3 : 0; q.fillRect(mx - 36 + i * 8 + sw + wr * (4 - i) * .6, 108 - wr * 2, 6, 52 - wr * 3); }
+  if (M.phase === 2) for (let i = 0; i < 3; i++) { q.fillStyle = "#A8D8F0"; q.fillRect(mx - 20 + i * 18, 165 - wr * 3 + ((performance.now() / 30 + i * 9) % 30), 3, 6); }
+  $("mopBar").style.width = Math.round(M.phase === 1 ? M.clean * 70 : 70 + M.wring / 10 * 30) + "%";
+  if (mopDlg.open) requestAnimationFrame(mopDraw);
+}
+function openMop() {
+  if (performance.now() < mopNext) { bubble(myChar, `대걸레 아직 깨끗해 ✨ (${Math.ceil((mopNext - performance.now()) / 60000)}분 뒤에 또 빨 수 있어)`); return; }
+  if (me.seat) standUp(me); me.pose = "stand";
+  mopG = { phase: 1, clean: 0, mx: 160, lastX: null, dirS: 0, wring: 0 };
+  $("mopMsg").textContent = "대걸레를 손가락으로 잡고 좌우로 쓱쓱 문질러!"; $("mopWring").hidden = true; mopDlg.showModal(); requestAnimationFrame(mopDraw);
+}
+{ const c = $("mopCv"), pt = e => { const r = c.getBoundingClientRect(); return (e.clientX - r.left) / r.width * 320; }; let down = false;
+  c.addEventListener("pointerdown", e => { down = true; c.setPointerCapture(e.pointerId); if (mopG) mopG.lastX = pt(e); });
+  c.addEventListener("pointermove", e => { const M = mopG; if (!down || !M || M.phase !== 1) return; const x = Math.max(50, Math.min(270, pt(e))), dx = x - (M.lastX ?? x); M.mx = x; M.lastX = x;
+    const s = Math.sign(dx); if (s && s !== M.dirS) { M.dirS = s; } M.clean = Math.min(1, M.clean + Math.abs(dx) / 2600);
+    if (M.clean >= 1) { M.phase = 2; $("mopMsg").textContent = "깨끗해졌다! 이제 💪 꾹 짜기 버튼을 연타해!"; $("mopWring").hidden = false; } });
+  const up = () => { down = false; }; c.addEventListener("pointerup", up); c.addEventListener("pointercancel", up); }
+$("mopWring").onclick = () => { const M = mopG; if (!M || M.phase !== 2) return; M.wring++;
+  if (M.wring >= 10) { M.phase = 3; $("mopWring").hidden = true; $("mopMsg").textContent = "쫙~ 다 짰다! 대걸레 반짝반짝 ✨"; mopNext = performance.now() + 180000;
+    setTimeout(() => { mopDlg.close(); bubble(myChar, ["대걸레 뽀송뽀송~ 🪣", "누가 대걸레 안 빨고 걸어놨노 ㅡㅡ", "개수대 물 맑아졌다 ✨"][Math.floor(Math.random() * 3)]); setTimeout(() => addPts(4, "대걸레 빨기 +4"), 600); }, 900); } };
+$("mopClose").onclick = () => mopDlg.close(); mopDlg.addEventListener("close", () => { mopG = mopG && mopG.phase === 3 ? null : mopG; });
+function hitMop(wx, wy) { const [gx, gy] = toGrid(wx, wy, 9); return gx > MOP.x - .1 && gx < MOP.x + MOP.w + .1 && gy > MOP.y - .3 && gy < MOP.y + MOP.d + .3; }
+function goMop() { if (!myChar) return showPicker(); walkThen(MOP.x + MOP.w / 2, MOP.y + MOP.d + .6, () => { me.flip = false; openMop(); }); }
 /* 🚬 담배 피기: 누구나, 어디서나 (자세 메뉴 / 0번 키). 걸으면 끝나요 */
+const MOUTH = { ju: [-2.9, 17.5], isum: [-2.5, 20.4], sua: [-2.1, 33.3], hyerin: [-1.7, 33.3], hyuna: [-2.1, 29.2], najeong: [-3.3, 27], jaewon: [-1.7, 24] }; // 서 있는 캐릭터 발밑 기준 입 위치 [왼쪽(-)/오른쪽, 위로] (게임 화면에서 직접 잰 값, 왼쪽 보는 그림 기준)
 { const sp = setPose; setPose = p => { if (p === "smokeAll") { smokeAll(); return; } sp(p); if (p === "smoke" && myChar) bubble(myChar, ["후~ 🚬", "한 대만… 🚬", "담타 🚬💨"][Math.floor(Math.random() * 3)]); }; }
 /* 🚬 다같이 담배피기: 누르면 접속한 친구들 + 접속 안 한 캐릭터들까지 다 같이 (data/events 로 알려요) */
 const pageStart = Date.now();
+const SMOKE_C = [WIST.x0 + (WIST.x1 - WIST.x0) / 2, WIST.y0 - 1.7]; // 🚬 흡연 구역: 등나무 쉼터 앞에 다같이 동그랗게
+const smokeSpot = id => { const ids = Object.keys(CHARS), i = Math.max(0, ids.indexOf(id)), a = Math.PI * 2 * i / ids.length; return [SMOKE_C[0] + Math.cos(a) * 1.3, SMOKE_C[1] + Math.sin(a) * 1.0]; };
 function smokeEveryone(by) {
-  if (myChar && !(me.cs >= 0)) setPose("smoke");
-  const now = performance.now();
-  for (const [id, c] of Object.entries(CHARS)) { if (!c.seat) continue; const n = npcOf(id); npcLeaveSeat(n); n.path = []; n.pose = "smoke"; n.until = now + 15000; }
-  if (by && myChar) setTimeout(() => bubble(myChar, "다같이 담타~ 🚬💨"), 400);
+  if (myChar && !(me.cs >= 0)) { const [sx, sy] = smokeSpot(myChar); walkThen(sx, sy, () => { me.flip = me.x - me.y > SMOKE_C[0] - SMOKE_C[1]; setPose("smoke"); }); }
+  for (const [id, c] of Object.entries(CHARS)) { if (!c.seat) continue; const n = npcOf(id); npcLeaveSeat(n); const [sx, sy] = smokeSpot(id); n.path = findPath(sx, sy, n.x, n.y); n.goSeat = false; n.until = Infinity; if (n.path.length) n.goSmoke = true; else { n.pose = "smoke"; n.until = performance.now() + 25000; } }
+  if (by && myChar) setTimeout(() => bubble(myChar, "담타 가자~ 등나무로 🚬💨"), 400);
 }
 function smokeAll() {
   if (db) db.collection("events").add({ type: "smokeAll", t: Date.now(), by: myId || null }).catch(() => {});
@@ -2869,11 +3102,12 @@ addEventListener("keydown", e => { if (e.key === "0" && myChar && !/INPUT|TEXTAR
 { const orig = drawActor; drawActor = (a, fr, x, y) => {
   orig(a, fr, x, y);
   if (a.pose !== "smoke" || a.inCar) return;
-  const h = sprH(CHARS[a.c].sheet) || 36, dir = a.flip ? -1 : 1; // 그림은 왼쪽을 보고, flip이 아니면 뒤집어서 오른쪽을 봐요
-  const mx = Math.round(x + dir), my = Math.round(y - h * .64); // 입 (얼굴 아래쪽 가운데)
-  g.fillStyle = "#F4F4F0"; for (let k = 0; k < 5; k++) g.fillRect(mx + dir * k, my + (k > 2 ? 1 : 0), 1, 1); // 입에 문 담배 (살짝 아래로)
-  g.fillStyle = "#C89A5A"; g.fillRect(mx, my, 1, 1); // 필터
-  const tx = mx + dir * 5, ty = my + 1; g.fillStyle = "#FF7A2A"; g.fillRect(tx, ty, 1, 1); // 불씨
+  const dir = a.flip ? -1 : 1; // 그림은 왼쪽을 보고, flip이 아니면 뒤집어서 오른쪽을 봐요
+  const M = MOUTH[a.c] || [-2, (sprH(CHARS[a.c].sheet) || 36) * .64];
+  const mx = Math.round(x + (dir > 0 ? -M[0] : M[0])), my = Math.round(y - M[1]); // 뒤집혀 그려지면 입 x도 뒤집어요
+  g.fillStyle = "#F4F4F0"; for (let k = 1; k < 4; k++) g.fillRect(mx + dir * k, my + (k > 2 ? 1 : 0), 1, 1); // 입에 문 담배 (살짝 아래로)
+  g.fillStyle = "#C89A5A"; g.fillRect(mx, my, 1, 1); // 필터 (입술에 물린 쪽)
+  const tx = mx + dir * 4, ty = my + 1; g.fillStyle = "#FF7A2A"; g.fillRect(tx, ty, 1, 1); // 불씨
   const t = performance.now() / 900;
   for (let k = 0; k < 3; k++) { const ph = (t + k / 3) % 1, sx = Math.round(tx + Math.sin((t + k) * 3) * 2 + dir * ph * 3), sy = Math.round(ty - 2 - ph * 16); g.globalAlpha = .6 * (1 - ph); g.fillStyle = "#D8D8DC"; g.fillRect(sx - 1, sy - 1, 2 + Math.round(ph * 3), 2 + Math.round(ph * 2)); } // 연기 모락모락
   g.globalAlpha = 1;
@@ -2889,26 +3123,30 @@ addEventListener("pointermove", ev => {
 addEventListener("pointerup", () => {
   if (!dragW) return; const w = dragW, g2 = dragGrid, moved = dragging;
   dragW = null; dragging = false; dragGrid = null;
-  if (moved && g2) moveWorkTo(w, g2[0], g2[1]); else showWorkMenu(w); // 안 끌었으면 그냥 메뉴 열기
+  if (moved && g2) moveWorkTo(w, g2[0], g2[1]); else if (w.grad) bubble(myChar, `내 ${w.name}! 꾹 눌러서 끌면 옮겨져 ✋`); else showWorkMenu(w); // 안 끌었으면 그냥 메뉴 열기
 });
+const dragSnap = (w, v) => { const s = w.sz || .8; return w.grad ? Math.round((v - s / 2) * 10) / 10 : Math.round((v - s / 2) * 2) / 2; };
 function drawDragGhost() { // 끄는 동안 반투명 작품 + 놓을 자리 표시 (초록 = 놓을 수 있음, 빨강 = 안 됨)
   if (!dragging || !dragW || !dragGrid) return;
-  const x = Math.round((dragGrid[0] - .4) * 2) / 2, y = Math.round((dragGrid[1] - .4) * 2) / 2, ok = workSpotFree(dragW, x, y);
-  G.globalAlpha = .55; topQuad(x, y, x + .8, y + .8, 0, ok ? "#5AC878" : "#E85050"); G.globalAlpha = .75;
-  const img = renderWork(dragW, dragW.rot || 0), [cx, cy] = iso(x + .4, y + .4, 8); G.drawImage(img, cx - img.width / 2 + 1, cy - img.height + 14); G.globalAlpha = 1;
+  const s = dragW.sz || .8, x = dragSnap(dragW, dragGrid[0]), y = dragSnap(dragW, dragGrid[1]), ok = workSpotFree(dragW, x, y);
+  G.globalAlpha = .55; topQuad(x, y, x + s, y + s, 0, ok ? "#5AC878" : "#E85050"); G.globalAlpha = .75;
+  if (!dragW.grad) { const img = renderWork(dragW, dragW.rot || 0), [cx, cy] = iso(x + .4, y + .4, 8); G.drawImage(img, cx - img.width / 2 + 1, cy - img.height + 14); }
+  G.globalAlpha = 1;
 }
 function workSpotFree(w, x, y) {
+  const s = w.sz || .8;
   if (x < .4 || y < .4 || x > NX - 1.2 || y > NY - 1.2) return false;
-  for (let a = 0; a <= .8; a += .4) for (let b = 0; b <= .8; b += .4) {
+  for (let a = 0; a <= s; a += s / 2) for (let b = 0; b <= s; b += s / 2) {
     const px2 = x + a, py2 = y + b;
-    for (const k of blocks) { if (k.x === w.x && k.y === w.y && k.w === .8 && k.d === .8) continue; if (px2 > k.x - .1 && px2 < k.x + k.w + .1 && py2 > k.y - .1 && py2 < k.y + k.d + .1) return false; }
+    for (const k of blocks) { if (k.x === w.x && k.y === w.y && k.w === s && k.d === s) continue; if (px2 > k.x - .1 && px2 < k.x + k.w + .1 && py2 > k.y - .1 && py2 < k.y + k.d + .1) return false; }
   }
   return true;
 }
 async function moveWorkTo(w, gx, gy) {
-  const x = Math.round((gx - .4) * 2) / 2, y = Math.round((gy - .4) * 2) / 2;
+  const x = dragSnap(w, gx), y = dragSnap(w, gy);
   if (!workSpotFree(w, x, y)) { bubble(myChar, "거긴 자리가 없어… 빈 바닥을 눌러줘"); return false; }
-  if (db && !String(w.id).startsWith("local")) { try { await db.doc("works/" + w.id).update({ x, y }); } catch { bubble(myChar, "내 작품만 옮길 수 있어"); return true; } }
+  if (w.grad) { const ox = w.x, oy = w.y; w.x = x; w.y = y; buildWorld(); if (db) { try { await db.doc("grad/" + w.id).set({ x, y, t: Date.now(), by: myId || null }); } catch { w.x = ox; w.y = oy; buildWorld(); bubble(myChar, "이건 못 옮겨…"); return true; } } }
+  else if (db && !String(w.id).startsWith("local")) { try { await db.doc("works/" + w.id).update({ x, y }); } catch { bubble(myChar, "내 작품만 옮길 수 있어"); return true; } }
   else { w.x = x; w.y = y; buildWorld(); }
   bubble(myChar, `'${w.name || "무제"}' 옮겼다! ✋`); return true;
 }
@@ -2918,6 +3156,8 @@ cv.addEventListener("pointerdown", e => { // 차 관련 누르기를 먼저 처�
   if (!(me.cs >= 0) && !movingWork) { // ✋ 내 작품: 꾹 눌러 끌어서 옮기기 (그냥 톡 누르면 메뉴)
     const hw = hitWork(wx, wy);
     if (hw && (hw.by ? hw.by === myId : hw.c === myChar)) { e.stopImmediatePropagation(); e.preventDefault(); dragW = hw; dragStart = [e.clientX, e.clientY]; dragging = false; dragGrid = null; try { cv.setPointerCapture(e.pointerId); } catch {} return; }
+    const gp = !hw && hitGrad(wx, wy); // 🎓 졸업작품: 쥬 것은 쥬만, 이섬 것은 이섬만 끌어서 옮겨요
+    if (gp && gp.o === myChar) { e.stopImmediatePropagation(); e.preventDefault(); dragW = gp; dragStart = [e.clientX, e.clientY]; dragging = false; dragGrid = null; try { cv.setPointerCapture(e.pointerId); } catch {} return; }
   }
   if (movingWork) { // ✋ 작품 옮기는 중
     e.stopImmediatePropagation();
@@ -2932,13 +3172,16 @@ cv.addEventListener("pointerdown", e => { // 차 관련 누르기를 먼저 처�
   }
   { const v = hitVeh(wx, wy); if (v) { e.stopImmediatePropagation(); boardVeh(v); return; } }
   { const r = hitStoneRock(wx, wy); if (r) { e.stopImmediatePropagation(); goCarveStone(r); return; } } // 🪨 석조실 돌 깎기
+  if (!(me.cs >= 0) && hitBellTable(wx, wy)) { e.stopImmediatePropagation(); goBell(); return; } // 🔔 등나무 테이블 = 종치기
+  if (!(me.cs >= 0) && hitMop(wx, wy)) { e.stopImmediatePropagation(); goMop(); return; } // 🪣 개수대 = 대걸레 빨기
+  if (!(me.cs >= 0) && hitPoly(wx, wy)) { e.stopImmediatePropagation(); goPoly(); return; } // 🟡 폴리 작업대 = 사포질
   if (hitStairs(wx, wy)) { e.stopImmediatePropagation(); const { x, y, w } = STAIRS, [gx] = toGrid(wx, wy, 0); goTo(Math.min(x + w - .4, Math.max(x + .4, gx)), y + .4); } // 🪜 계단 누르면 꼭대기까지 올라가요
 }, true);
 setTimeout(() => { const b = $("carBtn"); if (b) b.onclick = e => { e.stopPropagation(); if (me.cs >= 0) leaveCar(); }; updCarBtn(); startCarPark(); }, 0);
 addEventListener("keydown", e => { if ((e.key === "e" || e.key === "E") && me.cs >= 0 && !/INPUT|TEXTAREA/.test(e.target.tagName)) leaveCar(); });
 
 /* 입력 */
-const blockedUI = () => $("pickDlg").open || $("eyeDlg").open || $("sculptDlg").open || $("boardDlg").open || !$("lightbox").hidden;
+const blockedUI = () => (document.getElementById("bellDlg") || {}).open || (document.getElementById("mopDlg") || {}).open || (document.getElementById("polyDlg") || {}).open || $("pickDlg").open || $("eyeDlg").open || $("sculptDlg").open || $("boardDlg").open || !$("lightbox").hidden;
 addEventListener("keydown", e => {
   if (blockedUI() || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
   const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
@@ -2955,7 +3198,6 @@ function goTo(x, y) { if (me.pose !== "stand") standUp(me); me.wantSeat = null; 
 cv.addEventListener("pointerdown", e => {
   const [wx, wy] = toWorld(e); $("poseMenu").hidden = true; $("outfitMenu").hidden = true; $("workMenu").hidden = true;
   { const [fx, fy] = iso(1.05, 10.7, 18); if (Math.abs(wx - fx) < 12 && Math.abs(wy - fy) < 22) { const open = performance.now() < fridgeUntil; fridgeUntil = open ? 0 : performance.now() + 8000; if (!open) say("냉장고 열었어! 🍱🥤", 2500); return; } }
-  { const [kx2, ky2] = iso(.75, 13.5, 20); if (Math.abs(wx - kx2) < 12 && Math.abs(wy - ky2) < 24) { openWardrobe("outfit"); return; } } // 락커 = 옷장
   if (hitMe(wx, wy)) { // 내 캐릭터: 한 번 = 앉기/일어나기, 두 번 톡톡 = 점프
     const t = performance.now();
     if (t - (me.tapAt || 0) < 330) { clearTimeout(me.tapTimer); me.tapAt = 0; doJump(); }
@@ -3005,7 +3247,7 @@ function updateNpcs(dt, now) {
       const [tx, ty] = n.path[0], ex = tx - n.x, ey = ty - n.y, dd = Math.hypot(ex, ey), st = 1.8 * dt;
       if (dd <= st) { n.x = tx; n.y = ty; n.path.shift(); } else { n.x += ex / dd * st; n.y += ey / dd * st; }
       n.step += dt * 8; if (Math.abs(ex - ey) > .01) n.flip = ex - ey < 0;
-      if (!n.path.length) { n.step = 0; if (n.goSeat) { n.x = c.seat.x; n.y = c.seat.y; n.pose = c.seat.bed ? "lie" : "sit"; n.goSeat = false; } n.until = now + (n.pose === "stand" ? 2000 + Math.random() * 4000 : 8000 + Math.random() * 15000); }
+      if (!n.path.length) { n.step = 0; if (n.goSeat) { n.x = c.seat.x; n.y = c.seat.y; n.pose = c.seat.bed ? "lie" : "sit"; n.goSeat = false; } if (n.goSmoke) { n.goSmoke = false; n.pose = "smoke"; n.flip = n.x - n.y > SMOKE_C[0] - SMOKE_C[1]; n.until = now + 25000; continue; } n.until = now + (n.pose === "stand" ? 2000 + Math.random() * 4000 : 8000 + Math.random() * 15000); }
     } else if (now > n.until) {
       if (n.pose !== "stand" && n.pose !== "sit" && n.pose !== "lie") n.pose = "stand";
       npcThink(id, n, now);
@@ -3164,7 +3406,21 @@ $("tabChar").onclick = () => showPicker();
 $("tabSculpt").onclick = () => { $("poseMenu").hidden = true; $("sculptBtn").click(); };
 $("tabBoard").onclick = () => { $("poseMenu").hidden = true; $("boardBtn").click(); };
 $("tabOutfit").onclick = () => { $("poseMenu").hidden = true; $("outfitMenu").hidden = true; openWardrobe("char"); };
-$("tabPose").onclick = () => { const m = $("poseMenu"); m.hidden = !m.hidden; $("outfitMenu").hidden = true; $("tabPose").setAttribute("aria-pressed", String(!m.hidden)); };
+$("tabPose").onclick = () => { const m = $("poseMenu"); m.hidden = !m.hidden; $("outfitMenu").hidden = true; $("gameMenu").hidden = true; $("tabGame").setAttribute("aria-pressed", "false"); $("tabPose").setAttribute("aria-pressed", String(!m.hidden)); };
+/* 🎮 게임하기: 종치기 · 석고 긁기 · 쓰레기 줍기 · 쓰레기 버리기 */
+$("tabGame").onclick = () => { const m = $("gameMenu"); m.hidden = !m.hidden; $("poseMenu").hidden = true; $("tabPose").setAttribute("aria-pressed", "false"); $("tabGame").setAttribute("aria-pressed", String(!m.hidden)); };
+{ const closeGM = () => { $("gameMenu").hidden = true; $("tabGame").setAttribute("aria-pressed", "false"); };
+  const nearest = list => list.sort((a, b) => Math.hypot(a.x - me.x, a.y - me.y) - Math.hypot(b.x - me.x, b.y - me.y))[0];
+  $("gmBell").onclick = () => { closeGM(); if (!myChar) return showPicker(); if (me.cs >= 0) leaveCar(); goBell(); };
+  $("gmScrape").onclick = () => { closeGM(); if (!myChar) return showPicker(); if (me.cs >= 0) leaveCar();
+    const p = nearest(allStains().filter(s => !scrapedNow(s.id))); if (!p) { bubble(myChar, "긁을 석고 자국이 없네! 깨끗하다 ✨"); return; } startScrape(p); };
+  $("gmPick").onclick = () => { closeGM(); if (!myChar) return showPicker(); if (me.cs >= 0) leaveCar();
+    if (carried >= BAG_MAX) { goDump(); return; }
+    const t = nearest((TRASH || []).filter(t => !trashGone(t.id))); if (!t) { bubble(myChar, carried ? "주울 쓰레기 다 주웠다! 버리러 가자 ♻️" : "바닥에 쓰레기가 없네 ✨"); return; } goPick(t); };
+  $("gmPoly").onclick = () => { closeGM(); if (!myChar) return showPicker(); if (me.cs >= 0) leaveCar(); goPoly(); };
+  $("gmMop").onclick = () => { closeGM(); if (!myChar) return showPicker(); if (me.cs >= 0) leaveCar(); goMop(); };
+  $("gmDump").onclick = () => { closeGM(); if (!myChar) return showPicker(); if (me.cs >= 0) leaveCar(); goDump(); };
+}
 document.querySelector(".world").appendChild(document.querySelector(".tabbar")); // 독을 게임 화면 안 아래 가운데에
 document.querySelector(".world").style.position = document.querySelector(".world").style.position || (getComputedStyle(document.querySelector(".world")).position === "static" ? "relative" : "");
 $("hudBrand").onclick = () => openWardrobe("char"); // 왼쪽 위 내 아이콘 = 캐릭터 바꾸기
