@@ -242,7 +242,7 @@ button { touch-action: manipulation; }
       <button class="hud-btn" type="button" id="chatToggle" aria-expanded="true" aria-controls="chat">💬 채팅</button>
     </div>
     <div class="menu" id="poseMenu" hidden></div>
-    <div class="menu" id="gameMenu" hidden aria-label="게임하기"><button type="button" id="gmBell">🔔 할리갈리</button><button type="button" id="gmScrape">🧽 석고 긁기 🪙3~8</button><button type="button" id="gmPick">🗑️ 쓰레기 줍기</button><button type="button" id="gmDump">♻️ 쓰레기 버리기 🪙개당 3</button><button type="button" id="gmMop">🪣 대걸레 빨기 🪙4</button><button type="button" id="gmPoly">🟡 폴리 사포질 🪙5</button></div>
+    <div class="menu" id="gameMenu" hidden aria-label="게임하기"><button type="button" id="gmBell">🔔 할리갈리</button><button type="button" id="gmScrape">🧽 석고 긁기 🪙3~8</button><button type="button" id="gmPick">🗑️ 쓰레기 치우기 🪙개당 3</button><button type="button" id="gmDump" hidden>♻️ 쓰레기 버리기</button><button type="button" id="gmMop">🪣 대걸레 빨기 🪙4</button><button type="button" id="gmPoly">🟡 폴리 사포질 🪙5</button></div>
     <button type="button" id="carBtn" class="car-btn" hidden>🚗 내리기</button>
     <div class="menu" id="outfitMenu" hidden aria-label="옷 갈아입기"></div>
     <div class="menu work-menu" id="workMenu" hidden><div id="workInfo" class="work-info"></div><button type="button" id="workLike" class="work-like" aria-pressed="false">🤍 좋아요 0</button><div id="workCmts" class="work-cmts"></div><form id="workCmtForm" class="work-cmt-form"><input id="workCmtIn" maxlength="80" autocomplete="off" placeholder="댓글 달기"><button type="submit">등록</button></form><button type="button" id="workMove">✋ 내 작품 옮기기</button><button type="button" id="workDel">🔨 내 작품 치우기</button><button type="button" id="workClose">닫기</button></div>
@@ -1134,7 +1134,7 @@ roundStool = (gx, gy, col, tag = null) => koStool(gx + .2, gy + .2, tag);
 /* 평상 (노란 장판) */
 function pyeongsang(gx, gy, w, d, tags = []) { // tags: 친구들 각자 자리 (평상 = 모여 앉는 곳)
   addBlock(gx, gy, w, d);
-  let ti = 0; for (let i = 0; i < Math.floor(w); i++) for (const yy of [gy + .7, gy + d - .7]) SEATS.push({ x: gx + .5 + i, y: yy, h: 9, tag: tags[ti++] || null });
+  let ti = 0; for (let i = 0; i < Math.floor(w); i++) for (const yy of [gy + .7, gy + d - .7]) SEATS.push({ x: gx + .5 + i, y: yy, h: 9, tag: tags[ti++] || null, py: 1 });
   addObj(gx, gy, w, d, 30, () => {
     for (const [x, y] of [[.1, .1], [w - .25, .1], [.1, d - .25], [w - .25, d - .25], [w / 2, .1], [w / 2, d - .25]]) box(gx + x, gy + y, .15, .15, 7, "#9A6A3E", "#7A5030", "#5E3C22");
     box(gx, gy, w, d, 2, "#C8945A", "#A87440", "#8A5C30", 7);
@@ -3565,7 +3565,7 @@ function draw(now) {
     [[.2, 3, "#E06A4A"], [.45, 3, "#7FB4EA"], [.7, 3, "#FFD84A"], [.2, 14, "#FF8FB1"], [.5, 14, "#A8D870"]].forEach(([u, v, c]) => faceQuad(f, u, v, u + .2, v + 5, c, OLC));
     poly([f(.94, 1), f(.94, 37), iso(1.75, 11.45, 37), iso(1.75, 11.45, 1)], "#F4F4F4"); outline([f(.94, 1), f(.94, 37), iso(1.75, 11.45, 37), iso(1.75, 11.45, 1)]);
   } });
-  list.push(boardItem()); list.push(...najeongCarItems()); list.push(...petItems(now, Math.min(.1, (now - (draw.lastT || now)) / 1000))); draw.lastT = now; // 🐾 펫 // 🚗 나정카 (상자 차들은 없앰)
+  list.push(boardItem()); list.push(...najeongCarItems()); list.push(...petItems(now, Math.min(.1, (now - (draw.lastT || now)) / 1000))); draw.lastT = now; if (typeof feastItems === "function") list.push(...feastItems()); // 🍽️ 평상 음식 // 🐾 펫 // 🚗 나정카 (상자 차들은 없앰)
   // 캐릭터: 나, 접속한 친구, 비어 있는 캐릭터(자기 자리에 앉아 있음)
   const actors = [];
   if (myChar) actors.push({ c: myChar, x: me.x, y: me.y, pose: me.pose, flip: me.flip, step: me.step, h: me.cs >= 0 ? vehRiderH(me.veh) : me.seat ? me.seat.h : 0, me: true, inCar: me.cs >= 0 && vehHides(me.veh), outfit: myOutfit, drunk, acc: myAcc, running: me.running, jumpAt: me.jumpAt, eye: myEye });
@@ -3671,7 +3671,7 @@ $("tabGame").onclick = () => { const m = $("gameMenu"); m.hidden = !m.hidden; $(
     const p = nearest(allStains().filter(s => !scrapedNow(s.id))); if (!p) { bubble(myChar, "긁을 석고 자국이 없네! 깨끗하다 ✨"); return; } startScrape(p); };
   $("gmPick").onclick = () => { closeGM(); if (!myChar) return showPicker(); if (me.cs >= 0) leaveCar();
     if (carried >= BAG_MAX) { goDump(); return; }
-    const t = nearest((TRASH || []).filter(t => !trashGone(t.id))); if (!t) { bubble(myChar, carried ? "주울 쓰레기 다 주웠다! 버리러 가자 ♻️" : "바닥에 쓰레기가 없네 ✨"); return; } goPick(t); };
+    const t = nearest((TRASH || []).filter(t => !trashGone(t.id))); if (!t) { if (carried) { bubble(myChar, "다 주웠다! 버리러 가자 ♻️"); goDump(); } else bubble(myChar, "바닥에 쓰레기가 없네 ✨"); return; } goPick(t); }; // 줍기+버리기 하나로: 봉투 차면 알아서 버리러 가요
   $("gmPoly").onclick = () => { closeGM(); if (!myChar) return showPicker(); if (me.cs >= 0) leaveCar(); goPoly(); };
   $("gmMop").onclick = () => { closeGM(); if (!myChar) return showPicker(); if (me.cs >= 0) leaveCar(); goMop(); };
   $("gmDump").onclick = () => { closeGM(); if (!myChar) return showPicker(); if (me.cs >= 0) leaveCar(); goDump(); };
@@ -3680,6 +3680,62 @@ document.querySelector(".world").appendChild(document.querySelector(".tabbar"));
 document.querySelector(".world").style.position = document.querySelector(".world").style.position || (getComputedStyle(document.querySelector(".world")).position === "static" ? "relative" : "");
 $("hudBrand").onclick = () => openWardrobe("char"); // 왼쪽 위 내 아이콘 = 캐릭터 바꾸기
 { const orig = bubble; bubble = (c, text) => { orig(c, text); if (c !== myChar && $("chat").classList.contains("closed")) { unread++; updBadge(); } }; }
+/* 🍽️ 평상 먹방: 평상에 앉으면 엽떡·치킨·고량주 버튼이 떠요. 시킨 음식은 평상 위에 10분 동안 모두에게 보여요 (data/feast) */
+const FEAST = { tteok: { n: "🌶️ 엽떡", c: 3, say: ["스읍 하… 맵다 🌶️🔥", "엽떡은 착한맛이 국룰…은 무슨 오리지널 🌶️", "쿨피스 누가 사와 🥵"] }, chicken: { n: "🍗 치킨", c: 3, say: ["치킨은 살 안 쪄 🍗", "닭다리는 내꺼다 🍗", "바삭바삭 냠냠 🍗"] }, gyang: { n: "🍶 고량주", c: 2 } };
+let feastList = []; // {f, ch, t}
+const feastNow = () => feastList.filter(v => Date.now() - v.t < 600000);
+function startFeast() {
+  if (!db) return;
+  db.collection("feast").orderBy("t", "desc").limit(30).onSnapshot(s => { feastList = s.docs.map(d => d.data()).filter(v => v && FEAST[v.f]); }, () => {});
+}
+setTimeout(function sfe() { if (db) startFeast(); else if (window.claude) setTimeout(sfe, 1500); }, 1900);
+function feastItems() { // 평상 위에 시킨 음식 (10분 동안)
+  const L = feastNow(); if (!L.length) return [];
+  const gx = 4.6, gy = 11.4, cnt = { tteok: 0, chicken: 0, gyang: 0 }; for (const v of L) cnt[v.f]++;
+  const spots = { tteok: [[1.6, 1.0], [2.4, 1.9]], chicken: [[3.4, 1.0], [3.9, 2.0]], gyang: [[2.9, 1.5], [1.2, 2.1], [4.4, 1.5]] }, out = [];
+  const R = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
+  for (const f of ["tteok", "chicken", "gyang"]) for (let k = 0; k < Math.min(cnt[f], spots[f].length); k++) {
+    const ux = gx + spots[f][k][0], uy = gy + spots[f][k][1];
+    out.push({ d: ux + uy + .05, f: () => { const [a, b] = iso(ux, uy, 9), sx = Math.round(a), sy = Math.round(b);
+      if (f === "tteok") { R(sx - 6, sy - 5, 12, 7, "#2A1F18"); R(sx - 5, sy - 4, 10, 5, "#F2F2EE"); R(sx - 4, sy - 4, 8, 2, "#E8402A"); R(sx - 3, sy - 4, 1, 1, "#FFF3D8"); R(sx, sy - 4, 2, 1, "#FFF3D8"); R(sx + 2, sy - 3, 1, 1, "#FFF3D8"); } // 엽떡 통
+      else if (f === "chicken") { R(sx - 7, sy - 5, 14, 7, "#2A1F18"); R(sx - 6, sy - 4, 12, 5, "#F2E2C0"); R(sx - 4, sy - 6, 3, 3, "#C8782A"); R(sx - 1, sy - 7, 3, 4, "#B86A20"); R(sx + 2, sy - 6, 3, 3, "#D08A38"); R(sx - 2, sy - 5, 1, 1, "#F2C27A"); } // 치킨 박스
+      else { R(sx - 2, sy - 11, 5, 12, "#2A1F18"); R(sx - 1, sy - 10, 3, 10, "#F4F4F0"); R(sx - 1, sy - 6, 3, 3, "#D8343A"); R(sx, sy - 12, 1, 2, "#C82828"); } // 고량주 병
+    } });
+  }
+  return out;
+}const feastBar = document.createElement("div"); feastBar.id = "feastBar"; feastBar.hidden = true;
+feastBar.style.cssText = "position:absolute;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:31;display:flex;gap:6px;padding:8px;border-radius:18px;background:rgba(255,252,247,.95);box-shadow:0 8px 24px rgba(40,24,12,.22)";
+for (const [k, v] of Object.entries(FEAST)) { const b = document.createElement("button"); b.type = "button"; b.textContent = `${v.n} 🪙${v.c}`; b.style.cssText = "border:0;border-radius:12px;padding:9px 13px;background:#f3ece2;color:#2a1f18;font:700 .88rem inherit;cursor:pointer"; b.onclick = () => feastEat(k); feastBar.appendChild(b); }
+document.querySelector(".world").appendChild(feastBar);
+setInterval(() => { const on = !!(myChar && me.seat && me.seat.py && !blockedUI()); if (feastBar.hidden === on) feastBar.hidden = !on; }, 300);
+function feastEat(k) {
+  if (!myChar || !me.seat || !me.seat.py) return;
+  const F = FEAST[k]; if (!spend(F.c, F.n)) return;
+  if (db) db.collection("feast").add({ f: k, ch: myChar, by: myId || null, t: Date.now() }).catch(() => {}); else feastList.unshift({ f: k, ch: myChar, t: Date.now() });
+  if (k === "gyang") { // 고량주: 기존 술 취하기 + 눈 뱅글뱅글
+    if (sleepUntil > Date.now()) return;
+    drunk = Math.min(4, drunk + 1); drunkAt = Date.now();
+    const L = [["캬~ 🍶 독하다", "한 잔만 하는 거다"], ["어우 알딸딸하네 🥴", "고량주 맛있노"], ["나 안 취했다… 진짜로…", "다들 사랑한다아 🥴💕"]];
+    if (drunk >= 4) { standUp(me); me.path = []; me.pose = "lie"; sleepUntil = Date.now() + 25000; bubble(myChar, "…뻗었다 😵 Zzz"); } else bubble(myChar, L[drunk - 1][Math.floor(Math.random() * 2)]);
+  } else bubble(myChar, F.say[Math.floor(Math.random() * F.say.length)]);
+  pushPresence(true);
+}
+/* 🌀 취하면 눈이 뱅글뱅글 (고량주 마신 사람, 모두에게 보여요) */
+const DIZZY_EYES = { ju: [-4.2, 18.7, 4.8], isum: [-3.8, 21.6, 4.8], sua: [-3.4, 33.5, 4.8], hyerin: [-3, 33.5, 4.8], hyuna: [-3.4, 30.4, 4.8], najeong: [-4.6, 28.2, 4.8], jaewon: [-3, 25.2, 4.8] }; // 발밑 기준 앞쪽 눈 [x, 위로, 두 눈 사이] (왼쪽 보는 그림 기준)
+{ const orig = drawActor; drawActor = (a, fr, x, y) => {
+  orig(a, fr, x, y);
+  if (!(a.drunk > 0) || a.inCar || a.pose !== "stand" && a.pose !== "sit") return;
+  const E = DIZZY_EYES[a.c]; if (!E) return;
+  const dir = a.flip ? -1 : 1, sit = a.pose === "sit" ? (DIZZY_SIT[a.c] || 0) : 0, u = .5; // u = 반 도트 (더 촘촘하게)
+  const ex = x + (dir > 0 ? -E[0] : E[0]), ey = y - E[1] + sit, ph = Math.floor(performance.now() / 140) % 4;
+  const SP = [[-1, -2], [0, -2], [1, -2], [2, -1], [2, 0], [2, 1], [1, 2], [0, 2], [-1, 2], [-2, 1], [-2, 0], [0, 0], [1, 0]]; // @ 모양 소용돌이 (돌아가요)
+  const rot = ([i, j]) => [[i, j], [-j, i], [-i, -j], [j, -i]][ph];
+  for (const off of [0, -dir * E[2]]) { // 앞눈 + 뒷눈
+    const cx = ex + off;
+    g.fillStyle = "#FFFFFF"; g.fillRect(cx - 2.5 * u, ey - 2.5 * u, 5 * u, 5 * u);
+    g.fillStyle = "#2A2A3A"; for (const q of SP) { const [i, j] = rot(q); g.fillRect(cx + (i - .5) * u, ey + (j - .5) * u, u, u); }
+  }
+}; }const DIZZY_SIT = { isum: .5, sua: 7, hyerin: 7, hyuna: 6.5, najeong: 4.5, jaewon: 3.3 }; // 앉았을 때 눈이 내려가는 만큼 (직접 잰 값)
 document.querySelector(".world").appendChild($("chat")); // 💬 채팅은 게임 화면 왼쪽 아래 (게임처럼)
 if (!isPhone()) setChatOpen(true);
 $("chatIn").addEventListener("keydown", e => { if (e.key === "Escape") $("chatIn").blur(); });
