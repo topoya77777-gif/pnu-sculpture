@@ -97,6 +97,7 @@ dialog p { margin: 0 0 14px; color: var(--muted); font-size: .88rem; }
 .sculpt button:not(.send), .sculpt select, .sculpt input { font: inherit; font-size: .85rem; border: 1px solid var(--line); background: var(--bg); color: var(--fg); border-radius: 10px; padding: 7px 10px; }
 .sculpt button[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent) inset; }
 .sculpt label { font-size: .78rem; font-weight: 700; color: var(--muted); }
+.sg-cols { display: flex; gap: 5px; flex-wrap: wrap; } .sg-cols button { width: 26px; height: 26px; min-width: 0; padding: 0; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.25); font-size: 11px; } .sg-cols button[aria-pressed="true"] { box-shadow: 0 0 0 3px #e0577f; }
 .sg-mats { display: flex; gap: 6px; flex-wrap: wrap; } .sg-mats button { color: #2a1f18 !important; font-weight: 700; }
 .work-menu { left: 50%; right: auto; top: 70px; transform: translateX(-50%); }
 .board { width: min(560px, calc(100vw - 16px)); }
@@ -297,6 +298,7 @@ button { touch-action: manipulation; }
       <label for="sgMode">만드는 방식</label>
       <select id="sgMode"><option value="extrude">두께 있게 (그린 모양 그대로)</option><option value="lathe">돌려깎기 (화병·사람처럼 빙 돌려서)</option></select>
       <label>재료</label><div class="sg-mats" id="sgMats"></div>
+      <label>🎨 색칠 (칸마다 다른 색 가능)</label><div class="sg-cols" id="sgCols"></div>
       <label for="sgName">작품 이름</label><input type="text" id="sgName" maxlength="20" placeholder="예) 석고 두상 습작" autocomplete="off">
     </div>
   </div>
@@ -1540,25 +1542,32 @@ const MATS = {
 };
 let WORKS = [];
 const workCache = new Map();
+/* 🎨 색칠 팔레트: 0 = 재료 색 그대로, 나머지는 칸마다 칠한 색 (작품의 cg 에 저장) */
+const PAL = [null, "#E2433F", "#F28C28", "#F5D33B", "#5DBB4C", "#3BA7D9", "#3F5FD0", "#9B59D0", "#F27BB0", "#8B5A3C", "#2A2A2E", "#FFFFFF"];
+const PAL_NAME = ["재료 색", "빨강", "주황", "노랑", "초록", "하늘", "파랑", "보라", "분홍", "갈색", "검정", "흰색"];
+const palShade = (() => { const m = new Map(); return hex => { if (m.has(hex)) return m.get(hex); const n = parseInt(hex.slice(1), 16), r = n >> 16, g2 = n >> 8 & 255, b = n & 255;
+  const f = (k, t) => "#" + [r, g2, b].map(v => Math.round(t ? v + (255 - v) * k : v * k).toString(16).padStart(2, "0")).join("");
+  const s = [f(.3, 1), hex, f(.72, 0)]; m.set(hex, s); return s; }; })();
+const cellCol = (w, i) => { const ci = w.cg ? parseInt(w.cg[i] || "0", 36) || 0 : 0; return PAL[ci] ? palShade(PAL[ci]) : null; };
 function voxels(w) {
   const set = new Set(), V = [];
-  const add = (x, y, z) => { const k = x + "," + y + "," + z; if (!set.has(k)) { set.add(k); V.push([x, y, z]); } };
+  let ci = 0; const add = (x, y, z) => { const k = x + "," + y + "," + z; if (!set.has(k)) { set.add(k); V.push([x, y, z, ci]); } };
   for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) if (w.g[y * GW + x] === "1") {
-    const vy = GH - 1 - y;
+    const vy = GH - 1 - y; ci = y * GW + x;
     if (w.mode === "lathe") { const r = Math.abs(x + .5 - GW / 2); for (let a = -8; a < 8; a++) for (let b = -8; b < 8; b++) { const d = Math.hypot(a + .5, b + .5); if (Math.abs(d - r) < .8) add(a, vy, b); } }
     else for (let z = -2; z <= 1; z++) add(x - GW / 2, vy, z);
   }
   return V;
 }
 function renderWork(w, rot = 0, scale = 1) {
-  const key = (w.id || "draft") + "|" + w.g + "|" + w.mode + "|" + w.mat + "|" + rot + "|" + scale;
+  const key = (w.id || "draft") + "|" + w.g + "|" + (w.cg || "") + "|" + w.mode + "|" + w.mat + "|" + rot + "|" + scale;
   if (workCache.has(key)) return workCache.get(key);
   const W = 52, H = 64, c = document.createElement("canvas"); c.width = W * scale; c.height = H * scale;
   const q = c.getContext("2d"), M = (MATS[w.mat] || MATS.plaster).c, cx = W / 2 - 1, cy = H - 14;
-  const V = voxels(w).map(([x, y, z]) => rot === 1 ? [-z - 1, y, x] : rot === 2 ? [-x - 1, y, -z - 1] : rot === 3 ? [z, y, -x - 1] : [x, y, z]);
+  const V = voxels(w).map(([x, y, z, i]) => rot === 1 ? [-z - 1, y, x, i] : rot === 2 ? [-x - 1, y, -z - 1, i] : rot === 3 ? [z, y, -x - 1, i] : [x, y, z, i]);
   V.sort((a, b) => (a[0] + a[2]) - (b[0] + b[2]) || a[1] - b[1]);
   const P = (x, y, w2, h2, col) => { q.fillStyle = col; q.fillRect(Math.round(x) * scale, Math.round(y) * scale, w2 * scale, h2 * scale); };
-  for (const [x, y, z] of V) { const sx = cx + (x - z), sy = cy + (x + z) * .5 - y * 1.5; P(sx, sy, 2, 1, M[0]); P(sx, sy + 1, 1, 2, M[1]); P(sx + 1, sy + 1, 1, 2, M[2]); }
+  for (const [x, y, z, i] of V) { const C = cellCol(w, i) || M, sx = cx + (x - z), sy = cy + (x + z) * .5 - y * 1.5; P(sx, sy, 2, 1, C[0]); P(sx, sy + 1, 1, 2, C[1]); P(sx + 1, sy + 1, 1, 2, C[2]); }
   // 바깥 테두리
   const im = q.getImageData(0, 0, c.width, c.height), d = im.data, CW = c.width, CH = c.height, edge = [];
   const op = (x, y) => x >= 0 && y >= 0 && x < CW && y < CH && d[(y * CW + x) * 4 + 3] > 0;
@@ -1623,13 +1632,13 @@ function findSpot() {
   return null;
 }
 /* 작업 창 */
-const draft = { g: "0".repeat(GW * GH), mode: "extrude", mat: "plaster", rot: 0 };
-let paintVal = "1", painting = false, previewRot = 0;
+const draft = { g: "0".repeat(GW * GH), cg: "0".repeat(GW * GH), mode: "extrude", mat: "plaster", rot: 0 };
+let paintVal = "1", painting = false, previewRot = 0, paintCol = 0;
 function drawGrid() {
   const cvG = $("sgGrid"), q = cvG.getContext("2d"), s = cvG.width / GW;
   q.fillStyle = "#FBF7EE"; q.fillRect(0, 0, cvG.width, cvG.height);
   const M = MATS[draft.mat].c;
-  for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) if (draft.g[y * GW + x] === "1") { q.fillStyle = M[1]; q.fillRect(x * s, y * s, s, s); q.fillStyle = M[0]; q.fillRect(x * s, y * s, s, 3); }
+  for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) if (draft.g[y * GW + x] === "1") { const C = cellCol(draft, y * GW + x) || M; q.fillStyle = C[1]; q.fillRect(x * s, y * s, s, s); q.fillStyle = C[0]; q.fillRect(x * s, y * s, s, 3); }
   q.strokeStyle = "rgba(90,70,50,.18)"; q.lineWidth = 1;
   for (let x = 0; x <= GW; x++) { q.beginPath(); q.moveTo(x * s + .5, 0); q.lineTo(x * s + .5, cvG.height); q.stroke(); }
   for (let y = 0; y <= GH; y++) { q.beginPath(); q.moveTo(0, y * s + .5); q.lineTo(cvG.width, y * s + .5); q.stroke(); }
@@ -1643,9 +1652,11 @@ function drawPreview() {
 function paintAt(e) {
   const cvG = $("sgGrid"), r = cvG.getBoundingClientRect(), x = Math.floor((e.clientX - r.left) / r.width * GW), y = Math.floor((e.clientY - r.top) / r.height * GH);
   if (x < 0 || y < 0 || x >= GW || y >= GH) return;
-  const i = y * GW + x; if (draft.g[i] === paintVal) return;
-  draft.g = draft.g.slice(0, i) + paintVal + draft.g.slice(i + 1);
-  if (draft.mode === "lathe") { const j = y * GW + (GW - 1 - x); draft.g = draft.g.slice(0, j) + paintVal + draft.g.slice(j + 1); }
+  const i = y * GW + x, cv = paintVal === "1" ? paintCol.toString(36) : "0";
+  if (!draft.cg || draft.cg.length !== GW * GH) draft.cg = "0".repeat(GW * GH);
+  if (draft.g[i] === paintVal && draft.cg[i] === cv) return;
+  const setAt = j => { draft.g = draft.g.slice(0, j) + paintVal + draft.g.slice(j + 1); draft.cg = draft.cg.slice(0, j) + cv + draft.cg.slice(j + 1); };
+  setAt(i); if (draft.mode === "lathe") setAt(y * GW + (GW - 1 - x));
   drawGrid();
 }
 async function placeWork() {
@@ -1654,6 +1665,7 @@ async function placeWork() {
   const spot = findSpot(); if (!spot) { $("sgNote").textContent = "주변에 놓을 자리가 없어. 넓은 곳으로 가서 다시 눌러줘."; return; }
   const name = ($("sgName").value || "무제").trim().slice(0, 20);
   const w = { t: Date.now(), by: myId || null, c: myChar, name, g: draft.g, mode: draft.mode, mat: draft.mat, rot: previewRot, x: spot[0], y: spot[1] };
+  if (draft.cg && /[1-9a-z]/.test(draft.cg)) w.cg = draft.cg; // 🎨 칠한 색
   if (db) { try { await db.collection("works").add(w); } catch (e) { $("sgNote").textContent = e && e.code === "invalid_argument" ? "보기 전용이라 작품을 못 놓아." : "작품을 못 놓았어. 다시 해봐."; return; } }
   else { WORKS.unshift({ ...w, id: "local" + Date.now() }); buildWorld(); }
   if (w.mat === "plaster" && typeof addSpill === "function") addSpill(spot); // 석고 작업 = 바닥에 석고 자국
@@ -1684,13 +1696,18 @@ async function removeWork() {
   const mats = $("sgMats");
   for (const [k, m] of Object.entries(MATS)) { const b = document.createElement("button"); b.type = "button"; b.className = "sg-mat"; b.dataset.k = k; b.style.background = m.c[1]; b.title = m.name; b.textContent = m.name; b.onclick = () => { draft.mat = k; mats.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x.dataset.k === k))); drawGrid(); }; mats.appendChild(b); }
   mats.querySelector("button").setAttribute("aria-pressed", "true");
+  const cols = $("sgCols");
+  PAL.forEach((c, k) => { const b = document.createElement("button"); b.type = "button"; b.dataset.k = k; b.title = b.ariaLabel = PAL_NAME[k]; b.setAttribute("aria-pressed", String(k === 0));
+    b.style.background = c || "conic-gradient(#F6F4EE 0 25%, #C08858 0 50%, #E2AE5E 0 75%, #A8A49C 0)"; if (!c) b.textContent = "🗿";
+    b.onclick = () => { paintCol = k; paintVal = "1"; $("sgPen").setAttribute("aria-pressed", "true"); $("sgErase").setAttribute("aria-pressed", "false"); cols.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(+x.dataset.k === k))); };
+    cols.appendChild(b); });
   const cvG = $("sgGrid");
   cvG.addEventListener("pointerdown", e => { e.preventDefault(); painting = true; cvG.setPointerCapture(e.pointerId); paintAt(e); });
   cvG.addEventListener("pointermove", e => { if (painting) paintAt(e); });
   cvG.addEventListener("pointerup", () => { painting = false; });
   $("sgPen").onclick = () => { paintVal = "1"; $("sgPen").setAttribute("aria-pressed", "true"); $("sgErase").setAttribute("aria-pressed", "false"); };
   $("sgErase").onclick = () => { paintVal = "0"; $("sgErase").setAttribute("aria-pressed", "true"); $("sgPen").setAttribute("aria-pressed", "false"); };
-  $("sgClear").onclick = () => { draft.g = "0".repeat(GW * GH); drawGrid(); };
+  $("sgClear").onclick = () => { draft.g = "0".repeat(GW * GH); draft.cg = "0".repeat(GW * GH); drawGrid(); };
   $("sgMode").onchange = () => { draft.mode = $("sgMode").value; drawGrid(); };
   $("sgRot").onclick = () => { previewRot = (previewRot + 1) % 4; drawPreview(); };
   $("sgPlace").onclick = () => placeWork();
