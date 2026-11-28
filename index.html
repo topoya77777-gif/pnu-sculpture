@@ -187,6 +187,44 @@ button { touch-action: manipulation; }
   .tabbar button { width: 56px; }
   .chat { bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important; }
 }
+/* ---------- 🎮 게임 HUD: 아래 가운데 독(어두운 유리) + 왼쪽 아래 게임식 채팅 ---------- */
+.tabbar button[hidden] { display: none !important; }
+#tabChat { display: flex !important; }
+.tabbar { gap: 2px !important; padding: 6px !important; background: rgba(255,252,247,.92) !important; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border-radius: 20px !important; box-shadow: 0 8px 24px rgba(40,24,12,.22), inset 0 0 0 1px rgba(58,36,24,.1) !important; }
+.tabbar button { width: 58px !important; height: 54px !important; border-radius: 14px !important; font-size: 1.35rem !important; color: #2a1f18 !important; transition: background .15s, transform .1s; }
+.tabbar button span { font-size: .66rem !important; font-weight: 700 !important; color: #7a6a5c !important; letter-spacing: -.02em; }
+.tabbar button:hover { background: rgba(224,87,127,.1) !important; }
+.tabbar button[aria-pressed="true"], .tabbar button[aria-expanded="true"] { background: #e0577f !important; }
+.tabbar button[aria-pressed="true"] span, .tabbar button[aria-expanded="true"] span { color: #fff !important; }
+.tabbar .badge { top: 3px; left: auto; right: 6px; }
+#gameMenu, #poseMenu { background: rgba(255,252,247,.95) !important; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); padding: 8px !important; gap: 6px; border-radius: 18px !important; bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important; }
+#gameMenu button, #poseMenu button { background: #f3ece2; color: #2a1f18; padding: 9px 13px; border-radius: 12px; font-weight: 700; font-size: .86rem; }
+#gameMenu button:hover, #poseMenu button:hover { background: #ffe3ec; }
+/* 채팅: 오른쪽 패널 대신 게임처럼 왼쪽 아래에 */
+.chat { position: absolute !important; left: max(12px, env(safe-area-inset-left, 0px)) !important; right: auto !important; top: auto !important; bottom: max(12px, env(safe-area-inset-bottom, 0px)) !important; width: min(360px, calc(100vw - 24px)) !important; height: 260px !important;
+  background: rgba(20,16,26,.42) !important; border: 0 !important; border-radius: 14px !important; box-shadow: none !important; z-index: 29 !important; color: #fff; transition: background .2s; }
+.chat:hover, .chat:focus-within { background: rgba(20,16,26,.72) !important; }
+.chat-top { display: none !important; }
+.chat .msgs { padding: 10px 12px 4px; gap: 3px; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.3) transparent; -webkit-mask-image: linear-gradient(transparent, #000 28px); mask-image: linear-gradient(transparent, #000 28px); }
+.chat .m, .chat .m.mine { max-width: 100%; align-self: stretch; background: transparent !important; padding: 0; border-radius: 0; font-size: .88rem; line-height: 1.35; text-shadow: 0 1px 2px rgba(0,0,0,.7); }
+.chat .m-head { display: inline; font-size: inherit; color: inherit; }
+.chat .m-head b { margin-right: 6px; filter: brightness(1.35) saturate(1.2); }
+.chat .m-head b::after { content: ":"; }
+.chat .m-head span { display: none; }
+.chat .m-text { display: inline; margin: 0; color: #fff; }
+.chat .m-img { max-height: 120px; }
+.chat .m-empty { color: rgba(255,255,255,.6); margin-top: 12px; }
+.chat .note { color: #ffb48a; }
+.chat form { padding: 6px 8px 8px !important; border: 0 !important; gap: 5px; }
+.chat input[type=text] { background: rgba(0,0,0,.35) !important; border: 1px solid rgba(255,255,255,.18) !important; color: #fff !important; border-radius: 10px; padding: 8px 10px; }
+.chat input[type=text]::placeholder { color: rgba(255,255,255,.55); }
+.chat .icon-btn { background: rgba(0,0,0,.35); border-color: rgba(255,255,255,.18); color: #fff; border-radius: 10px; }
+.chat .send { border-radius: 10px; padding: 8px 12px; }
+@media (max-width: 760px) {
+  .chat { bottom: calc(80px + env(safe-area-inset-bottom, 0px)) !important; left: 8px !important; width: min(330px, calc(100vw - 16px)) !important; height: min(38vh, 260px) !important; }
+  .tabbar { left: 50% !important; bottom: max(8px, env(safe-area-inset-bottom, 0px)) !important; }
+  .tabbar button { width: 50px !important; height: 52px !important; }
+}
 </style>
 
 <div class="app" id="app">
@@ -208,7 +246,7 @@ button { touch-action: manipulation; }
     <button type="button" id="carBtn" class="car-btn" hidden>🚗 내리기</button>
     <div class="menu" id="outfitMenu" hidden aria-label="옷 갈아입기"></div>
     <div class="menu work-menu" id="workMenu" hidden><div id="workInfo" class="work-info"></div><button type="button" id="workLike" class="work-like" aria-pressed="false">🤍 좋아요 0</button><div id="workCmts" class="work-cmts"></div><form id="workCmtForm" class="work-cmt-form"><input id="workCmtIn" maxlength="80" autocomplete="off" placeholder="댓글 달기"><button type="submit">등록</button></form><button type="button" id="workMove">✋ 내 작품 옮기기</button><button type="button" id="workDel">🔨 내 작품 치우기</button><button type="button" id="workClose">닫기</button></div>
-    <div class="help" id="help">방향키·바닥 클릭 걷기 · 의자·평상 누르면 앉기 · 등나무 테이블 누르면 할리갈리 · 1~6 자세 · 0 담배 · Enter 채팅</div>
+    <div class="help" id="help">방향키·바닥 클릭 걷기 · 의자·평상 누르면 앉기 · 등나무 테이블 누르면 할리갈리 · 1~6 자세 · Enter 채팅</div>
   </div>
   <aside class="chat" id="chat" aria-label="채팅">
     <div class="chat-top"><button type="button" id="chatClose" aria-label="채팅 닫기">✕</button><h2>부산대 조소과 수다방</h2><div class="online" id="online" aria-live="polite"></div></div>
@@ -1211,7 +1249,7 @@ function buildWorld() {
   streetLight(OUTX + .5, 3.6); streetLight(OUTX + .5, 16.2); streetLight(OUTX + .5, 25.4); busStop(NX - .85, 6.4);
   outdoorStairs(); // 뒤쪽(위층)으로 올라가는 계단
   wisteriaYard(); // 🌸 앞마당 등나무 쉼터 + 벤치
-  ashtrayBin(); // 🚬 흡연 구역 재떨이 쓰레기통
+  // ashtrayBin(); // 🚬 흡연 기능 뺐어요
   stoneRoom(); // 🪨 석조실 (하얀 천막)
   polyStation(); // 🟡 석조실 아래 야외: 폴리 작품 사포질 (누르면 사포 게임)
   WORKS.forEach(workObj); extraProps(); // 친구들이 만든 작품 + 고량주·분리수거함
@@ -3310,10 +3348,11 @@ function startEvents() {
     if (v && v.type === "smokeAll" && v.by !== myId && Date.now() - v.t < 30000) { smokeEveryone(false); if (myChar) bubble(myChar, "오 담타? 🚬"); }
   }, () => {});
 }
-setTimeout(() => startEvents(), 1500);
-addEventListener("keydown", e => { if (e.key === "0" && myChar && !/INPUT|TEXTAREA/.test(e.target.tagName) && !blockedUI()) setPose("smoke"); });
+// setTimeout(() => startEvents(), 1500); // 🚬 다같이 담배피기 뺐어요
+addEventListener("keydown", e => { if (false && e.key === "0" && myChar && !/INPUT|TEXTAREA/.test(e.target.tagName) && !blockedUI()) setPose("smoke"); });
 { const orig = drawActor; drawActor = (a, fr, x, y) => {
   orig(a, fr, x, y);
+  return; // 🚬 흡연 기능 뺐어요 (그림도 안 그려요)
   if (a.pose !== "smoke" || a.inCar) return;
   const dir = a.flip ? -1 : 1; // 그림은 왼쪽을 보고, flip이 아니면 뒤집어서 오른쪽을 봐요
   const M = MOUTH[a.c] || [-2, (sprH(CHARS[a.c].sheet) || 36) * .64];
@@ -3387,7 +3426,7 @@ cv.addEventListener("pointerdown", e => { // 차 관련 누르기를 먼저 처�
   { const r = hitStoneRock(wx, wy); if (r) { e.stopImmediatePropagation(); goCarveStone(r); return; } } // 🪨 석조실 돌 깎기
   if (!(me.cs >= 0) && hitBellTable(wx, wy)) { e.stopImmediatePropagation(); goBell(); return; } // 🔔 등나무 테이블 = 할리갈리
   if (!(me.cs >= 0) && hitMop(wx, wy)) { e.stopImmediatePropagation(); goMop(); return; } // 🪣 개수대 = 대걸레 빨기
-  if (!(me.cs >= 0) && hitAshtray(wx, wy)) { e.stopImmediatePropagation(); const [sx, sy] = smokeSpot(myChar); walkThen(sx, sy, () => { me.flip = me.x - me.y > SMOKE_C[0] - SMOKE_C[1]; setPose("smoke"); }); return; } // 🚬 재떨이 누르면 가서 한 대
+  if (false && hitAshtray(wx, wy)) { e.stopImmediatePropagation(); const [sx, sy] = smokeSpot(myChar); walkThen(sx, sy, () => { me.flip = me.x - me.y > SMOKE_C[0] - SMOKE_C[1]; setPose("smoke"); }); return; } // 🚬 재떨이 누르면 가서 한 대
   if (!(me.cs >= 0) && hitMyPet(wx, wy)) { e.stopImmediatePropagation(); petMeow(); return; } // 🐾 냥이 쓰다듬기
   if (!(me.cs >= 0) && hitPoly(wx, wy)) { e.stopImmediatePropagation(); goPoly(); return; } // 🟡 폴리 작업대 = 사포질
   if (hitStairs(wx, wy)) { e.stopImmediatePropagation(); const { x, y, w } = STAIRS, [gx] = toGrid(wx, wy, 0); goTo(Math.min(x + w - .4, Math.max(x + .4, gx)), y + .4); } // 🪜 계단 누르면 꼭대기까지 올라가요
@@ -3565,7 +3604,7 @@ function draw(now) {
 
 /* ---------- 화면 버튼 ---------- */
 {
-  const POSES = [["stand", "🧍 서기", "1"], ["sit", "🪑 앉기", "2"], ["squat", "🙇 쪼그려 앉기", "3"], ["plank", "💪 엎드려 뻗쳐", "4"], ["lie", "😴 엎드려 눕기", "5"], ["floor", "🧘 바닥에 앉기", "6"], ["smoke", "🚬 담배 피기", "0"], ["smokeAll", "🚬 다같이 담배피기", "-"]];
+  const POSES = [["stand", "🧍 서기", "1"], ["sit", "🪑 앉기", "2"], ["squat", "🙇 쪼그려 앉기", "3"], ["plank", "💪 엎드려 뻗쳐", "4"], ["lie", "😴 엎드려 눕기", "5"], ["floor", "🧘 바닥에 앉기", "6"]];
   const m = $("poseMenu");
   for (const [p, label, key] of POSES) { const b = document.createElement("button"); b.type = "button"; b.textContent = `${label}  (${key})`; b.onclick = () => { setPose(p); m.hidden = true; }; m.appendChild(b); }
   $("poseBtn").onclick = () => { m.hidden = !m.hidden; $("poseBtn").setAttribute("aria-expanded", String(!m.hidden)); };
@@ -3641,7 +3680,9 @@ document.querySelector(".world").appendChild(document.querySelector(".tabbar"));
 document.querySelector(".world").style.position = document.querySelector(".world").style.position || (getComputedStyle(document.querySelector(".world")).position === "static" ? "relative" : "");
 $("hudBrand").onclick = () => openWardrobe("char"); // 왼쪽 위 내 아이콘 = 캐릭터 바꾸기
 { const orig = bubble; bubble = (c, text) => { orig(c, text); if (c !== myChar && $("chat").classList.contains("closed")) { unread++; updBadge(); } }; }
-addEventListener("resize", () => { if (!isPhone()) $("chat").classList.remove("closed"); });
+document.querySelector(".world").appendChild($("chat")); // 💬 채팅은 게임 화면 왼쪽 아래 (게임처럼)
+if (!isPhone()) setChatOpen(true);
+$("chatIn").addEventListener("keydown", e => { if (e.key === "Escape") $("chatIn").blur(); });
 </script>
 
 </body></html>
