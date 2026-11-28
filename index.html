@@ -2931,7 +2931,7 @@ bellDlg.innerHTML = `<style>
 <div class="bell-top"><b>🔔 할리갈리</b><button type="button" id="bellClose">닫기</button></div>
 <div class="bell-board" id="bellBoard"></div>
 <div class="bell-msg" id="bellMsg" aria-live="polite"></div>
-<div class="bell-help">펼쳐진 카드에서 <b>같은 과일이 딱 5개</b>가 되면 종을 쳐! (스페이스바도 돼) · 틀리면 모두에게 1장씩 줘야 해<br>이기면 🦴 펫 간식을 받아</div>
+<div class="bell-help">펼쳐진 카드에서 <b>같은 과일이 딱 5개</b>가 되면 종을 쳐! (스페이스바도 돼) · 틀리면 모두에게 1장씩 줘야 해<br>이기면 🏆 1승, 지면 1패로 기록돼</div>
 <div class="bell-lobby" id="bellLobby" hidden></div>
 <button type="button" class="bell-start" id="bellStart" hidden>시작하기</button>`;
 document.body.appendChild(bellDlg);
@@ -3022,13 +3022,37 @@ function bellCheckEnd() {
     G2.over = true; clearTimeout(G2.tm); G2.botT.forEach(clearTimeout);
     const winner = alive.length === 1 ? alive[0] : G2.pl.slice().sort((a, b) => (b.deck.length + b.pile.length) - (a.deck.length + a.pile.length))[0];
     G2.winId = winner.id || null;
-    if (winner.me) bellWinTreat(); else bellMsg(`😵 ${winner.name} 우승! 다시 해볼까?`);
+    if (meP) bellRecord(!!winner.me);
+    if (winner.me) bellWinTreat(); else bellMsg(`😵 ${winner.name} 우승! 다시 해볼까? (내 전적 ${bellRecText(myChar)})`);
     if (!bellNet) { $("bellStart").textContent = "🤖 한 판 더"; $("bellStart").hidden = false; } else bellShowLobby();
     bellRender(); return true;
   }
   return false;
 }
-function bellWinTreat() { let t = 0; try { t = (+localStorage.getItem("mc-pet-treats") || 0) + 1; localStorage.setItem("mc-pet-treats", t); } catch {} bellMsg(`🏆 ${(CHARS[myChar] || {}).name || "내"}가 이겼다! 🦴 펫 간식 +1 (모은 간식 ${t}개)`); if (myChar) bubble(myChar, "할리갈리 우승! 🔔🏆"); }
+function bellWinTreat() { bellMsg(`🏆 ${(CHARS[myChar] || {}).name || "내"}가 이겼다! · 내 전적 ${bellRecText(myChar)}`); if (myChar) bubble(myChar, `할리갈리 우승! 🔔🏆 (${bellRecText(myChar)})`); }
+/* 🏆 전적: 캐릭터마다 몇승 몇패 (data/bellrec 에 한 판씩 기록, 모두에게 보여요) */
+let bellRec = {}; // ch -> {w, l}
+const bellRecText = ch => { const r = bellRec[ch] || { w: 0, l: 0 }; return `${r.w}승 ${r.l}패`; };
+function bellRecord(win) {
+  if (!myChar) return;
+  const r = bellRec[myChar] || (bellRec[myChar] = { w: 0, l: 0 }); if (win) r.w++; else r.l++; // 화면엔 바로 반영
+  if (db) db.collection("bellrec").add({ ch: myChar, w: win ? 1 : 0, by: myId || null, t: Date.now() }).catch(() => {});
+  else try { localStorage.setItem("mc-bell-rec", JSON.stringify(bellRec)); } catch {}
+}
+function startBellRec() {
+  if (!db) { try { bellRec = JSON.parse(localStorage.getItem("mc-bell-rec") || "{}") || {}; } catch {} return; }
+  db.collection("bellrec").orderBy("t", "desc").limit(3000).onSnapshot(s => {
+    const m = {}; for (const d of s.docs) { const v = d.data(); if (!v || !CHARS[v.ch]) continue; const r = m[v.ch] || (m[v.ch] = { w: 0, l: 0 }); if (v.w) r.w++; else r.l++; }
+    bellRec = m; if (bellDlg.open && !bellG) bellShowLobby();
+  }, () => {});
+}
+setTimeout(function sbrc() { if (db) startBellRec(); else if (window.claude) setTimeout(sbrc, 1500); else startBellRec(); }, 1700);
+function bellRecBoard() { // 로비에 보여줄 전적표
+  const d = document.createElement("div"); d.style.cssText = "width:100%;text-align:center;font-size:.85rem;margin-bottom:4px";
+  const rows = Object.entries(bellRec).filter(([c, r]) => CHARS[c] && r.w + r.l > 0).sort((a, b) => b[1].w - a[1].w || a[1].l - b[1].l);
+  d.innerHTML = `<b>🏆 내 전적: ${bellRecText(myChar)}</b>` + (rows.length ? `<div style="margin-top:4px;opacity:.8">${rows.map(([c, r]) => `${CHARS[c].name} ${r.w}승 ${r.l}패`).join(" · ")}</div>` : "");
+  return d;
+}
 /* 로비: 🤖 봇이랑 하기 / 👥 접속한 친구랑 하기 (방 만들기 · 참가하기) */
 function bellShowLobby() {
   const L = $("bellLobby"); L.hidden = false; L.innerHTML = ""; $("bellStart").hidden = true;
@@ -3039,6 +3063,7 @@ function bellShowLobby() {
     if (bellNet.host) { const s = btn(n >= 2 ? `▶ ${n}명이서 시작` : "친구 기다리는 중… (2명부터)", () => { if ((bellNet.room.pl || []).length >= 2) bellStart(bellNet.room.pl); }); s.disabled = n < 2; }
     btn("방 나가기", () => bellLeave(), true); return;
   }
+  L.appendChild(bellRecBoard());
   btn("🤖 봇이랑 하기", () => { bellLeave(true); bellStart(); });
   if (!db) return;
   const open = bellOpenRooms.filter(r => r.by !== myId && (r.pl || []).length < 4);
@@ -3067,7 +3092,7 @@ function bellEnter(rid, host) {
   bellRoomUnsub = db.doc("bellroom/" + rid).onSnapshot(s => { const R = s.data(); if (!bellNet || bellNet.rid !== rid) return; if (!R || R.st === "closed") { bellLeave(true); $("bellBoard").innerHTML = ""; bellMsg("방이 닫혔어."); bellShowLobby(); return; } bellNet.room = R;
     if (!host) { // 친구 화면: 방장이 보낸 상태 그대로 그려요
       if (R.st === "play" || R.st === "over") { bellG = { pl: (R.pl || []).map(p => ({ id: p.id, name: p.name, me: p.id === myId, deck: { length: p.deck }, pile: p.top ? [p.top] : [], out: p.out })), turn: R.turn, over: R.st === "over", lockUntil: bellG ? bellG.lockUntil : 0 }; $("bellLobby").hidden = true; bellRender(); $("bellMsg").textContent = R.msg || "";
-        if (R.st === "over" && R.win === myId && bellLastWin !== R.round) { bellLastWin = R.round; bellWinTreat(); } }
+        if (R.st === "over" && bellLastWin !== R.round && (R.pl || []).some(p => p.id === myId)) { bellLastWin = R.round; bellRecord(R.win === myId); if (R.win === myId) bellWinTreat(); } }
       else { bellG = null; $("bellBoard").innerHTML = ""; }
     }
     if (!bellG || bellG.over) bellShowLobby();
@@ -3147,7 +3172,7 @@ petDlg.innerHTML = `<div class="bell-top"><b>🐾 과실 냥이</b><button type=
 <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center">
 <button type="button" class="bell-start" id="petFeed" style="margin:0">🦴 간식 주기</button>
 <button type="button" class="bell-start" id="petBuy" style="margin:0;background:#ffffff33;color:#fff">🪙10 → 🦴 간식 사기</button></div>
-<div class="bell-help" style="margin-top:8px">회색냥은 <b>마지막으로 간식 준 사람</b>을 따라다녀! 🦴 간식은 🔔 할리갈리에서 이기면 받아. 다같이 간식 3개 줄 때마다 한 단계씩 커져 (최대 6단계) · 냥이를 톡 누르면 쓰다듬기</div>`;
+<div class="bell-help" style="margin-top:8px">회색냥은 <b>마지막으로 간식 준 사람</b>을 따라다녀! 🦴 간식은 🪙10으로 사서 줘. 다같이 간식 3개 줄 때마다 한 단계씩 커져 (최대 6단계) · 냥이를 톡 누르면 쓰다듬기</div>`;
 document.body.appendChild(petDlg);
 function renderPet() {
   const q = $("petCv").getContext("2d"); q.imageSmoothingEnabled = false; q.clearRect(0, 0, 120, 70);
@@ -3159,7 +3184,7 @@ function renderPet() {
 function openPet() { if (!myChar) return showPicker(); petDlg.showModal(); requestAnimationFrame(renderPet); }
 $("petClose").onclick = () => petDlg.close();
 $("petFeed").onclick = async () => {
-  const tr = petTreats(); if (tr < 1) { $("petInfo").textContent += "\n간식이 없어! 할리갈리에서 이기거나 🪙10으로 사줘"; return; }
+  const tr = petTreats(); if (tr < 1) { $("petInfo").textContent += "\n간식이 없어! 🪙10으로 사서 줘"; return; }
   setTreats(tr - 1); const lv0 = petLv();
   if (db) { try { await db.collection("petfeed").add({ pet: PET.kind, ch: myChar, by: myId || null, t: Date.now() }); } catch { setTreats(petTreats() + 1); $("petInfo").textContent += "\n간식을 못 줬어. 다시 해봐"; return; } }
   else { PET.owner = myChar; PET.feeds++; try { localStorage.setItem("mc-pet-local", JSON.stringify({ owner: PET.owner, feeds: PET.feeds })); } catch {} }
