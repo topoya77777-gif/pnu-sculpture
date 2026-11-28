@@ -2534,7 +2534,7 @@ function showPicker() {
   if (!dlg.open) dlg.showModal();
 }
 function chooseChar(id) {
-  myChar = id; try { localStorage.setItem("mc-char", id); } catch {}
+  myChar = id; if (!lockedChar) lockedChar = id; try { localStorage.setItem("mc-char", id); } catch {} // 처음 고른 캐릭터로 고정
   const c = CHARS[id]; standUp(me); me.path = [];
   if (c.seat && !c.seat.occ) sitOn(me, c.seat); else { me.x = START[0]; me.y = START[1]; }
   pushPresence(true); renderOnline();
@@ -3563,7 +3563,7 @@ requestAnimationFrame(tick);
   setTimeout(() => { // 친구들 정보가 들어올 시간을 조금 주고 캐릭터 고르기
     let saved = null; try { saved = localStorage.getItem("mc-char"); } catch {}
     if (lockedChar) chooseChar(lockedChar); // 친구는 자기 캐릭터로 바로 들어와요
-    else if (saved && CHARS[saved] && !takenChars().has(saved)) chooseChar(saved); else showPicker();
+    else if (saved && CHARS[saved]) chooseChar(saved); else showPicker(); // 한 번 고른 캐릭터는 고정 (폰·컴 동시 접속도 OK)
   }, room ? 1500 : 300);
 })();
 
